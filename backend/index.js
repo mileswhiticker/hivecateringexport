@@ -43,11 +43,65 @@ const backend_host= process.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
 const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
 const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>`;
 
+function getDateObjectFromString(dateString) {
+    const [day, month, year] = dateString.split('/').map(Number);
+    // month is 0-based in JS Date
+    return new Date(year, month - 1, day);
+}
+
 function parseDietPrefs(person_obj, summed_obj){
+
+    //first we need to figure out if this person is onsite for our desired date range
+    let count_this_person = false;
+    switch(summed_obj["date_request"]){
+        case "All days": {
+            count_this_person = true;
+            break;
+        }
+        case "Single day": {
+            const arrival_date = getDateObjectFromString(person_obj[0]);
+            const departure_date = getDateObjectFromString(person_obj[1]);
+            const request_date_start = getDateObjectFromString(summed_obj["date_start"]);
+
+            if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_start.getTime()){
+                count_this_person = true;
+            }
+            break;
+        }
+        case "Day range": {
+            const arrival_date = getDateObjectFromString(person_obj[0]);
+            const departure_date = getDateObjectFromString(person_obj[1]);
+            const request_date_start = getDateObjectFromString(summed_obj["date_start"]);
+            const request_date_end = getDateObjectFromString(summed_obj["date_end"]);
+
+            // console.log(`${person_obj[0]} | ${person_obj[1]} | ${summed_obj["date_start"]} | ${summed_obj["date_end"]}`);
+            // console.log(`${arrival_date} | ${departure_date} | ${request_date_start} | ${request_date_end}`);
+
+            if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_end.getTime()){
+                count_this_person = true;
+            }
+            break;
+        }
+    }
+
+    if(!count_this_person) {
+        //finish early without adding to the summed object
+        return;
+    }
+
+    //is this deitary type already in our summed objet?
     if(summed_obj[person_obj[2]]){
+        //increase by 1
         summed_obj[person_obj[2]] += 1;
     } else {
+        //define a new dietary type
         summed_obj[person_obj[2]] = 1;
+    }
+
+    //is this person bringing kids?
+    const numKids = Number(person_obj[6]);
+    if(!isNaN(numKids)){
+        summed_obj["Children"] += numKids;
     }
 }
 
@@ -93,14 +147,24 @@ app.get("/api/sheets", async (req, res) => {
 
         //loop over first spreadsheet and parse into desired format
         let parsed_results = {};
-        let summed_results = {};
+        let summed_results = {"Children": 0, "date_request": "All days"};
+
+        //is the user requesting a specific date?
+        if(req.query.date_start){
+            summed_results["date_start"] = req.query.date_start;
+
+            if(req.query.date_end){
+                summed_results["date_end"] = req.query.date_end;
+                summed_results["date_request"] = "Day range";
+            } else {
+                summed_results["date_request"] = "Single day";
+            }
+        }
 
         // console.log(response1.data.values);
         let latestval = 0;
         for(let i=1;i<response1.data.values.length;i++)
         {
-            // break;
-
             //only grab the specific data we want from this sheet
             parsed_results[i] = [
                 //arrival date (non-normalised format)
@@ -125,13 +189,13 @@ app.get("/api/sheets", async (req, res) => {
                 response1.data.values[i][10],
             ];
             latestval++;
+
             parseDietPrefs(parsed_results[i], summed_results);
         }
 
         //village volunteers
         for(let i=1;i<response2.data.values.length;i++)
         {
-            // break;
             //skip volunteers that don't want to eat at the hive
             if(response2.data.values[i][4] === "No"){
                 continue;
