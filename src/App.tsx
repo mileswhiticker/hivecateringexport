@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import {type JSX, useState} from 'react'
 import * as React from "react";
 import './App.css'
 
@@ -7,7 +7,7 @@ function App() {
     const backend_port = import.meta.env.VITE_HIVECATER_BACKEND_PORT || 4000;
     const api_url = `http://localhost:${backend_port}/api/sheets`;
 
-    const [dietTable, setDietTable] = useState(<div></div>);
+    const [dietTable, setDietTable] = useState<JSX.Element[]>();
     const [dateHeading, setDateHeading] = useState("Select the desired dates then click the button to continue");
     const [selectedDateType, setDateType] = useState("All days");
 
@@ -66,34 +66,42 @@ function App() {
 
     function processRequestJson(json){
 
+        console.log("processRequestJson()",json)
+
         //construct a subheading showing the date/s for our request
-        let newDateHeading = `Catering for: ${json.date_request}`;
+        let newDateHeading = `Catering for: ${json.date_request_obj.date_request}`;
 
         //customise it a bit further
-        if(json.date_request === "Single day"){
-            newDateHeading += ` ${json.date_start}`;
-        } else if(json.date_request === "Day range"){
-            newDateHeading += ` ${json.date_start} - ${json.date_end}`;
+        if(json.date_request_obj.date_request === "Single day"){
+            newDateHeading += ` ${json.date_request_obj.date_start}`;
+        } else if(json.date_request_obj.date_request === "Day range"){
+            newDateHeading += ` ${json.date_request_obj.date_start} - ${json.date_end}`;
         }
 
         //now apply it
         setDateHeading(newDateHeading);
 
-        //loop over all rows in the response json to construct our html table
-        const rows = [];
-        for(const key in json) {
-            //skip fields that start with date because we only want diet prefs in the table
-            if(key.substring(0,4) === "date"){
-                continue;
-            }
+        const tables = [];
 
-            rows.push(
-                <tr key={key}>
-                    <td><b>{key}</b>: {json[key]}</td>
-                </tr>
-            );
+        //loop over all rows in the response json to construct our html table
+        for(let day_index=0; day_index<json.daily_results.length; day_index++){
+            const day_obj = json.daily_results[day_index];
+            const rows = [<tr key={day_index}><td>{new Date(day_obj.dateObj).toLocaleDateString('en-AU', { weekday: 'long' })} {day_obj.dateStr}</td></tr>];
+            for(const key in day_obj) {
+                //skip fields that start with date because we only want diet prefs in the table
+                if(key.substring(0,4) === "date"){
+                    continue;
+                }
+
+                rows.push(
+                    <tr key={key}>
+                        <td className="cellBorder"><b>{key}</b>:</td><td className="cellBorder"> {day_obj[key]}</td>
+                    </tr>
+                );
+            }
+            tables.push(<table key={day_index}><tbody>{rows}</tbody></table>);
         }
-        setDietTable(<table><tbody>{rows}</tbody></table>);
+        setDietTable(tables);
         setPollButtonText(pollButtonDefaultText);
     }
 
