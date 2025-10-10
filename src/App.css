@@ -9,6 +9,14 @@ td {
   text-align: left;
 }
 
+.hidden {
+  display: none;
+}
+
+.lineItem {
+  margin-bottom: 0.5rem;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
