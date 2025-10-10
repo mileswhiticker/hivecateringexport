@@ -9,13 +9,13 @@ function App() {
 
     const [dietTable, setDietTable] = useState(<div></div>);
     const [dateHeading, setDateHeading] = useState("Select the desired dates then click the button to continue");
-    const [selectedDateRequest, setDateRequest] = useState("All days");
+    const [selectedDateType, setDateType] = useState("All days");
 
     const [inputStartDate, setInputStartDate] = useState("2025-10-10");
     const [inputEndDate, setInputEndDate] = useState("2025-11-10");
 
     const handleDateRequestChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setDateRequest(event.target.value);
+        setDateType(event.target.value);
 
         //safety checking for date ranges
         if(event.target.value === "Day range") {
@@ -24,25 +24,41 @@ function App() {
 
             //make sure the end date is always at or after the start date
             if(endDate.getTime() < startDate.getTime()){
+
+                //get the date in the right format here
+                const monthInt = startDate.getMonth() + 1;
+                const monthStr = monthInt < 10 ? `0${monthInt}` : monthInt;
+                const dayInt = startDate.getDate();
+                const dayStr = dayInt < 10 ? `0${dayInt}` : dayInt;
+                const dateStr = `${startDate.getFullYear()}-${monthStr}-${dayStr}`;
+
                 //force the end date to be the same as the start date
-                const dateStr = `${startDate.getFullYear()}/${startDate.getMonth()}/${startDate.getDay()}`;
                 setInputEndDate(dateStr);
-                console.log(`Forcing end date to be: ${dateStr}`);
+                // console.log(`Forcing end date to be: ${dateStr}`);
             }
         }
     };
 
-    const pollingButtonDefault =
-        <button onClick={() => pollCateringData()}>
-            Generate catering data
-        </button>;
-    const pollingButtonLoading = <button disabled>Loading, please wait...</button>;
-    const [pollingButton, setPollingButton] = useState(pollingButtonDefault);
+    const pollButtonDefaultText = "Generate catering data";
+    const pollButtonLoadingText = "Please wait, loading...";
+    const [pollButtonText, setPollButtonText] = useState(pollButtonDefaultText);
 
     function pollCateringData(){
-        setPollingButton(pollingButtonLoading);
+        setPollButtonText(pollButtonLoadingText);
         setDietTable(<div></div>);
-        fetch(api_url)
+
+        //is the user requesting a specific date range?
+        let api_url_query = api_url;
+        // console.log(`user is requesting date type: ${selectedDateType}`);
+        if(selectedDateType !== "All days"){
+            api_url_query += `?date_start=${inputStartDate}`;
+            if(selectedDateType === "Day range") {
+                api_url_query += `&date_end=${inputEndDate}`;
+            }
+        }
+        console.log('user is sending GET request to url: ' + api_url_query);
+
+        fetch(api_url_query)
             .then((res) => res.json())
             .then((values) => processRequestJson(values))
             .catch(console.error);
@@ -78,7 +94,7 @@ function App() {
             );
         }
         setDietTable(<table><tbody>{rows}</tbody></table>);
-        setPollingButton(pollingButtonDefault);
+        setPollButtonText(pollButtonDefaultText);
     }
 
   return (
@@ -90,7 +106,7 @@ function App() {
                     type="radio"
                     name="dateRequestInput"
                     value="All days"
-                    checked={selectedDateRequest === "All days"}
+                    checked={selectedDateType === "All days"}
                     onChange={handleDateRequestChange}
                 />
                 All days
@@ -100,7 +116,7 @@ function App() {
                     type="radio"
                     name="dateRequestInput"
                     value="Single day"
-                    checked={selectedDateRequest === "Single day"}
+                    checked={selectedDateType === "Single day"}
                     onChange={handleDateRequestChange}
                 />
                 Single day
@@ -110,7 +126,7 @@ function App() {
                     type="radio"
                     name="dateRequestInput"
                     value="Day range"
-                    checked={selectedDateRequest === "Day range"}
+                    checked={selectedDateType === "Day range"}
                     onChange={handleDateRequestChange}
                 />
                 Day range
@@ -120,10 +136,10 @@ function App() {
         <div className="lineItem">
 
         {/* when the user wants all days */}
-        <div className={selectedDateRequest === "All days" ? "" : "hidden"}><br/></div>
+        <div className={selectedDateType === "All days" ? "" : "hidden"}><br/></div>
 
         {/* when the user wants a single day */}
-        <div className={selectedDateRequest === "Single day" ? "" : "hidden"}><input
+        <div className={selectedDateType === "Single day" ? "" : "hidden"}><input
             type="date"
             name="event"
             min="2025-10-01"
@@ -133,7 +149,7 @@ function App() {
         /></div>
 
         {/* when the user wants a range of days */}
-        <div className={selectedDateRequest === "Day range" ? "" : "hidden"}>Between <input
+        <div className={selectedDateType === "Day range" ? "" : "hidden"}>Between <input
             type="date"
             name="event"
             min="2025-10-01"
@@ -150,7 +166,11 @@ function App() {
         /></div>
         </div>
 
-        <div className="lineItem">{pollingButton}</div>
+        <div className="lineItem">
+            <button disabled={pollButtonText !== pollButtonDefaultText} onClick={() => pollCateringData()}>
+                {pollButtonText}
+            </button>
+        </div>
         <div className="lineItem"><em>{dateHeading}</em></div>
         <div>{dietTable}</div>
     </>
