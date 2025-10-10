@@ -56,11 +56,11 @@ function getDateObjectFromStringDash(dateString) {
     return new Date(year, month - 1, day)
 }
 
-function parseDietPrefs(person_obj, summed_obj){
+function parseDietPrefs(person_obj, summed_obj, daily_obj, date_request_obj) {
 
     //first we need to figure out if this person is onsite for our desired date range
     let count_this_person = false;
-    switch(summed_obj["date_request"]){
+    switch(date_request_obj["date_request"]){
         case "All days": {
             count_this_person = true;
             break;
@@ -68,7 +68,7 @@ function parseDietPrefs(person_obj, summed_obj){
         case "Single day": {
             const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
             const departure_date = getDateObjectFromStringSlash(person_obj[1]);
-            const request_date_start = getDateObjectFromStringDash(summed_obj["date_start"]);
+            const request_date_start = getDateObjectFromStringDash(date_request_obj["date_start"]);
 
             if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_start.getTime()){
                 count_this_person = true;
@@ -78,10 +78,10 @@ function parseDietPrefs(person_obj, summed_obj){
         case "Day range": {
             const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
             const departure_date = getDateObjectFromStringSlash(person_obj[1]);
-            const request_date_start = getDateObjectFromStringDash(summed_obj["date_start"]);
-            const request_date_end = getDateObjectFromStringDash(summed_obj["date_end"]);
+            const request_date_start = getDateObjectFromStringDash(date_request_obj["date_start"]);
+            const request_date_end = getDateObjectFromStringDash(date_request_obj["date_end"]);
 
-            // console.log(`${person_obj[0]} | ${person_obj[1]} | ${summed_obj["date_start"]} | ${summed_obj["date_end"]}`);
+            // console.log(`${person_obj[0]} | ${person_obj[1]} | ${date_request_obj["date_start"]} | ${date_request_obj["date_end"]}`);
             // console.log(`${arrival_date} | ${departure_date} | ${request_date_start} | ${request_date_end}`);
 
             console.log(`${arrival_date.getTime()} | ${request_date_start.getTime()} | ${departure_date.getTime()} | ${request_date_end.getTime()}`);
@@ -108,9 +108,16 @@ function parseDietPrefs(person_obj, summed_obj){
     }
 
     //is this person bringing kids?
-    const numKids = Number(person_obj[6]);
-    if(!isNaN(numKids)){
-        summed_obj["Children"] += numKids;
+    if(person_obj[6])
+    {
+        const numKids = Number(person_obj[6]);
+        if(!isNaN(numKids) && isFinite(numKids)){
+            if(!summed_obj["Children"]){
+                summed_obj["Children"] = numKids;
+            } else {
+                summed_obj["Children"] += numKids;
+            }
+        }
     }
 }
 
@@ -155,18 +162,20 @@ app.get("/api/sheets", async (req, res) => {
         });
 
         //loop over first spreadsheet and parse into desired format
-        let parsed_results = {};
-        let summed_results = {"Children": 0, "date_request": "All days"};
+        const parsed_results = {};
+        let summed_results = {};
+        const daily_results = {};
+        const date_request = {"date_request": "All days"};
 
         //is the user requesting a specific date?
         if(req.query.date_start){
-            summed_results["date_start"] = req.query.date_start;
+            date_request["date_start"] = req.query.date_start;
 
             if(req.query.date_end){
-                summed_results["date_end"] = req.query.date_end;
-                summed_results["date_request"] = "Day range";
+                date_request["date_end"] = req.query.date_end;
+                date_request["date_request"] = "Day range";
             } else {
-                summed_results["date_request"] = "Single day";
+                date_request["date_request"] = "Single day";
             }
         }
 
@@ -199,7 +208,7 @@ app.get("/api/sheets", async (req, res) => {
             ];
             latestval++;
 
-            parseDietPrefs(parsed_results[i], summed_results);
+            parseDietPrefs(parsed_results[i], summed_results, daily_results, date_request);
         }
 
         //village volunteers
@@ -235,7 +244,7 @@ app.get("/api/sheets", async (req, res) => {
                 //accompanying kids
                 response2.data.values[i][6],
             ];
-            parseDietPrefs(parsed_results[latestval + i], summed_results);
+            parseDietPrefs(parsed_results[latestval + i], summed_results, daily_results, date_request);
         }
 
         // const final_json = {...response1.data.values, ...response2.data.values};
