@@ -43,6 +43,14 @@ const backend_host= process.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
 const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
 const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>`;
 
+function parseDietPrefs(person_obj, summed_obj){
+    if(summed_obj[person_obj[2]]){
+        summed_obj[person_obj[2]] += 1;
+    } else {
+        summed_obj[person_obj[2]] = 1;
+    }
+}
+
 // basic greeting message
 app.get('/', (req, res) => {
     res.send(greeting_message + '</br></br>' + auth_status)
@@ -68,20 +76,103 @@ app.get("/api/sheets", async (req, res) => {
     let sheet_names = JSON.parse(process.env.HIVECATER_SHEETNAMES);
 
     try {
-        const spreadsheetId = spreadsheet_ids[0];
-        const range = sheet_names[0];
+        let spreadsheetId = spreadsheet_ids[0];
+        let range = sheet_names[0];
 
-        const response = await sheets.spreadsheets.values.get({
+        const response1 = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range,
         });
 
+        spreadsheetId = spreadsheet_ids[1];
+        range = sheet_names[1];
+        const response2 = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+        });
+
+        //loop over first spreadsheet and parse into desired format
+        let parsed_results = {};
+        let summed_results = {};
+
+        // console.log(response1.data.values);
+        let latestval = 0;
+        for(let i=1;i<response1.data.values.length;i++)
+        {
+            // break;
+
+            //only grab the specific data we want from this sheet
+            parsed_results[i] = [
+                //arrival date (non-normalised format)
+                response1.data.values[i][4],
+
+                //departure date (non-normalised format)
+                response1.data.values[i][5],
+
+                //food pref
+                response1.data.values[i][6],
+
+                //allergy
+                response1.data.values[i][7],
+
+                //allergy type
+                response1.data.values[i][8],
+
+                //other health concerns
+                response1.data.values[i][9],
+
+                //children
+                response1.data.values[i][10],
+            ];
+            latestval++;
+            parseDietPrefs(parsed_results[i], summed_results);
+        }
+
+        //village volunteers
+        for(let i=1;i<response2.data.values.length;i++)
+        {
+            // break;
+            //skip volunteers that don't want to eat at the hive
+            if(response2.data.values[i][4] === "No"){
+                continue;
+            }
+
+            //only grab the specific data we want from this sheet
+            //note: we are reordering these fields to match the order in the first spreadsheet
+            parsed_results[latestval + i] = [
+
+                //arrival date (DD/MM/YYYY)
+                response2.data.values[i][2],
+
+                //departure date (DD/MM/YYYY)
+                response2.data.values[i][3],
+
+                //dietary preferences
+                response2.data.values[i][5],
+
+                //allergies (Yes/No)
+                response2.data.values[i][7],
+
+                //list of allergies
+                response2.data.values[i][8],
+
+                //other dietary requirements/health concerns
+                response2.data.values[i][9],
+
+                //accompanying kids
+                response2.data.values[i][6],
+            ];
+            parseDietPrefs(parsed_results[latestval + i], summed_results);
+        }
+
+        // const final_json = {...response1.data.values, ...response2.data.values};
+
         res.header("Access-Control-Allow-Origin", "http://localhost:5173");
-        res.json(response.data.values);
+        res.json(summed_results);
     } catch (err) {
-        api_status = "ERROR: Failed to read Google Sheets. Check the spreadsheet ID/s and sheet name/s in the environment";
-        // console.error(api_status, err);
-        res.status(500).send(api_status);
+        api_status = "ERROR: Failed to read Google Sheets. Check the spreadsheet ID/s and sheet name/s in the environment |";
+        console.error(api_status, err);
+        res.status(500).send(err);
     }
 });
 
