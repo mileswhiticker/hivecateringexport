@@ -4,59 +4,16 @@ import './App.css'
 function formatTable(json: []) {
     console.log(json);
     const rows = [];
-    const diets = ["will eat anything","vegan","vegetarian"];
-    let omni = 0;
-    let vegan = 0;
-    let vegetarian = 0;
-    const other:string[] = [];
 
-    //start at 1 to skip the header row
-    for(let i=1; i<json.length; i++){
-        if(json[i][6].toLowerCase() === diets[0]){
-            omni++;
-        } else if(json[i][6].toLowerCase() === diets[1]){
-            vegan++;
-        } else if(json[i][6].toLowerCase() === diets[2]){
-            vegetarian++;
-        } else {
-            other.push(json[i][6]);
-        }
-        // for(let j=0; j<json.length; j++) {
-        //     rows.push(
-        //         <tr key={i}>
-        //             <td>{i}</td>
-        //         </tr>
-        //     );
-        // }
-    }
-    rows.push(
-        <tr key={"omni"}>
-            <td>Omni: {omni}</td>
-        </tr>
-    );
-    rows.push(
-        <tr key={"vegan"}>
-            <td>Vegan: {vegan}</td>
-        </tr>
-    );
-    rows.push(
-        <tr key={"vegetarian"}>
-            <td>Vegetarian: {vegetarian}</td>
-        </tr>
-    );
-    rows.push(
-        <tr key={"other"}>
-            <td>Other: {other.length}</td>
-        </tr>
-    );
-    for(let i=1; i<other.length; i++){
+    for(const key in json) {
         rows.push(
-            <tr key={i}>
-                <td><i>{other[i]}</i></td>
-            </tr>);
+            <tr key={key}>
+                <td><b>{key}</b>: {json[key]}</td>
+            </tr>
+        );
     }
     return (
-        <div><table><tbody>{rows}</tbody></table></div>
+        <table><tbody>{rows}</tbody></table>
     );
 }
 
@@ -76,7 +33,7 @@ function App() {
 
   return (
     <>
-        <h3>Daily catering requirements for the Hive at Spring Confest 2025</h3>
+        <h3>Total catering requirements for the Hive at Spring Confest 2025</h3>
         <div>{data}</div>
     </>
   )
