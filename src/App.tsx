@@ -86,7 +86,11 @@ function App() {
         //loop over all rows in the response json to construct our html table
         for(let day_index=0; day_index<json.daily_results.length; day_index++){
             const day_obj = json.daily_results[day_index];
-            const rows = [<tr key={day_index}><td>{new Date(day_obj.dateObj).toLocaleDateString('en-AU', { weekday: 'long' })} {day_obj.dateStr}</td></tr>];
+            const dateObj = new Date(day_obj.dateObj);
+            const day_name = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
+
+            const rows = [<tr key={day_index}><td>{day_name} {day_obj.dateStr}</td></tr>];
+
             for(const key in day_obj) {
                 //skip fields that start with date because we only want diet prefs in the table
                 if(key.substring(0,4) === "date"){
