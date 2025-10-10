@@ -35,6 +35,11 @@ const auth = new google.auth.GoogleAuth({
     scopes: SCOPES,
 });
 
+let last_uuid = 1;
+function get_uuid(){
+    return last_uuid++;
+}
+
 const sheets = google.sheets({ version: "v4", auth });
 
 const backend_port= process.env.VITE_HIVECATER_BACKEND_PORT || 4000;
@@ -56,18 +61,110 @@ function getDateObjectFromStringDash(dateString) {
     return new Date(year, month - 1, day)
 }
 
-function parseDietPrefs(person_obj, summed_obj, daily_obj, date_request_obj) {
+function getDateStringFromObjectDash(dateObj){
+
+    //get the date in the right format here
+    const monthInt = dateObj.getMonth() + 1;
+    const monthStr = monthInt < 10 ? `0${monthInt}` : monthInt;
+    const dayInt = dateObj.getDate();
+    const dayStr = dayInt < 10 ? `0${dayInt}` : dayInt;
+
+    return `${dateObj.getFullYear()}-${monthStr}-${dayStr}`;
+}
+
+function parseDietPrefs(person_obj, summed_obj, daily_objs, date_request_obj) {
 
     //first we need to figure out if this person is onsite for our desired date range
     let count_this_person = false;
+    const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
+
+    const departure_date = getDateObjectFromStringSlash(person_obj[1]);
     switch(date_request_obj["date_request"]){
         case "All days": {
             count_this_person = true;
+
+            //we need to loop over all dates this person is o site
+            let curCheckDate = new Date(arrival_date.getTime());
+
+            if(curCheckDate.getFullYear() !== 2025){
+                console.log(`WARNING: unusual checking year for this person`, person_obj);
+            }
+
+            while(curCheckDate.getTime() <= departure_date.getTime()) {
+
+                // const curCheckDateStr = getDateStringFromObjectDash(curCheckDate);
+
+                //see if an object for this day already exists
+                let cater_day_obj = null;
+                for(let i=0; i<daily_objs.length; i++) {
+                    const check_cater_day_obj = daily_objs[i];
+
+                    //is this our desired date?
+                    if(check_cater_day_obj.dateObj.getTime() === curCheckDate.getTime()) {
+                        //found it
+                        cater_day_obj = check_cater_day_obj;
+                        break;
+                    }
+
+                    //did we go too far?
+                    // if(check_cater_day_obj.dateObj.getTime() > curCheckDate.getTime()){
+                    //     break;
+                    // }
+                }
+
+                //if we didn't find it, create an object to track catering for this date
+                if(!cater_day_obj){
+                    cater_day_obj = {dateStr: getDateStringFromObjectDash(curCheckDate), dateObj: new Date(curCheckDate.getTime())};
+
+                    //find the place to add it to the list
+                    let success = false;
+                    for(let i=0; i<daily_objs.length; i++) {
+                        const check_cater_day_obj = daily_objs[i];
+
+                        if(check_cater_day_obj.dateObj.getTime() > cater_day_obj.dateObj.getTime()) {
+                            daily_objs.splice(i, 0, cater_day_obj);
+                            success = true;
+                            break;
+                        }
+                    }
+                    if(!success){
+                        daily_objs.push(cater_day_obj)
+                    }
+                    // console.log(cater_day_obj.dateStr);
+                }
+
+                //anonymised uuids to track the people on this date for debugging
+                // cater_day_obj.people.push(person_obj[7]);
+
+                //is this dietary type already in our summed object?
+                if(cater_day_obj[person_obj[2]]){
+                    //increase by 1
+                    cater_day_obj[person_obj[2]] += 1;
+                } else {
+                    //define a new dietary type
+                    cater_day_obj[person_obj[2]] = 1;
+                }
+
+                //is this person bringing kids?
+                if(person_obj[6])
+                {
+                    const numKids = Number(person_obj[6]);
+                    if(!isNaN(numKids) && isFinite(numKids) && numKids !== 0){
+                        if(!cater_day_obj["Children"]){
+                            cater_day_obj["Children"] = numKids;
+                        } else {
+                            cater_day_obj["Children"] += numKids;
+                        }
+                    }
+                }
+
+                //increment the date object by 1 day
+                curCheckDate.setDate(curCheckDate.getDate() + 1);
+            }
+
             break;
         }
         case "Single day": {
-            const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
-            const departure_date = getDateObjectFromStringSlash(person_obj[1]);
             const request_date_start = getDateObjectFromStringDash(date_request_obj["date_start"]);
 
             if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_start.getTime()){
@@ -76,15 +173,13 @@ function parseDietPrefs(person_obj, summed_obj, daily_obj, date_request_obj) {
             break;
         }
         case "Day range": {
-            const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
-            const departure_date = getDateObjectFromStringSlash(person_obj[1]);
             const request_date_start = getDateObjectFromStringDash(date_request_obj["date_start"]);
             const request_date_end = getDateObjectFromStringDash(date_request_obj["date_end"]);
 
             // console.log(`${person_obj[0]} | ${person_obj[1]} | ${date_request_obj["date_start"]} | ${date_request_obj["date_end"]}`);
             // console.log(`${arrival_date} | ${departure_date} | ${request_date_start} | ${request_date_end}`);
 
-            console.log(`${arrival_date.getTime()} | ${request_date_start.getTime()} | ${departure_date.getTime()} | ${request_date_end.getTime()}`);
+            // console.log(`${arrival_date.getTime()} | ${request_date_start.getTime()} | ${departure_date.getTime()} | ${request_date_end.getTime()}`);
 
             if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_end.getTime()){
                 count_this_person = true;
@@ -98,7 +193,7 @@ function parseDietPrefs(person_obj, summed_obj, daily_obj, date_request_obj) {
         return;
     }
 
-    //is this deitary type already in our summed objet?
+    //is this dietary type already in our summed object?
     if(summed_obj[person_obj[2]]){
         //increase by 1
         summed_obj[person_obj[2]] += 1;
@@ -164,8 +259,12 @@ app.get("/api/sheets", async (req, res) => {
         //loop over first spreadsheet and parse into desired format
         const parsed_results = {};
         let summed_results = {};
-        const daily_results = {};
+        const daily_results = [];
         const date_request = {"date_request": "All days"};
+
+        const response_json = {"date_request_obj": date_request,
+            "summed_results": summed_results,
+            "daily_results": daily_results};
 
         //is the user requesting a specific date?
         if(req.query.date_start){
@@ -205,6 +304,9 @@ app.get("/api/sheets", async (req, res) => {
 
                 //children
                 response1.data.values[i][10],
+
+                //uuid
+                get_uuid(),
             ];
             latestval++;
 
@@ -243,14 +345,15 @@ app.get("/api/sheets", async (req, res) => {
 
                 //accompanying kids
                 response2.data.values[i][6],
+
+                //uuid
+                get_uuid(),
             ];
             parseDietPrefs(parsed_results[latestval + i], summed_results, daily_results, date_request);
         }
 
-        // const final_json = {...response1.data.values, ...response2.data.values};
-
         res.header("Access-Control-Allow-Origin", "http://localhost:5173");
-        res.json(summed_results);
+        res.json(response_json);
     } catch (err) {
         api_status = "ERROR: Failed to read Google Sheets. Check the spreadsheet ID/s and sheet name/s in the environment |";
         console.error(api_status, err);
