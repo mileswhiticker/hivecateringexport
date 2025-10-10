@@ -45,7 +45,7 @@ function App() {
 
     function pollCateringData(){
         setPollButtonText(pollButtonLoadingText);
-        setDietTable(<div></div>);
+        // setDietTable(<div></div>);
 
         //is the user requesting a specific date range?
         let api_url_query = api_url;
@@ -56,7 +56,7 @@ function App() {
                 api_url_query += `&date_end=${inputEndDate}`;
             }
         }
-        console.log('user is sending GET request to url: ' + api_url_query);
+        // console.log('user is sending GET request to url: ' + api_url_query);
 
         fetch(api_url_query)
             .then((res) => res.json())
@@ -121,16 +121,16 @@ function App() {
                 />
                 Single day
             </label>
-            <label>
-                <input
-                    type="radio"
-                    name="dateRequestInput"
-                    value="Day range"
-                    checked={selectedDateType === "Day range"}
-                    onChange={handleDateRequestChange}
-                />
-                Day range
-            </label>
+            {/*<label>*/}
+            {/*    <input*/}
+            {/*        type="radio"*/}
+            {/*        name="dateRequestInput"*/}
+            {/*        value="Day range"*/}
+            {/*        checked={selectedDateType === "Day range"}*/}
+            {/*        onChange={handleDateRequestChange}*/}
+            {/*    />*/}
+            {/*    Day range*/}
+            {/*</label>*/}
         </em></div>
 
         <div className="lineItem">

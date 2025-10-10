@@ -43,10 +43,17 @@ const backend_host= process.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
 const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
 const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>`;
 
-function getDateObjectFromString(dateString) {
+function getDateObjectFromStringSlash(dateString) {
     const [day, month, year] = dateString.split('/').map(Number);
     // month is 0-based in JS Date
     return new Date(year, month - 1, day);
+}
+
+function getDateObjectFromStringDash(dateString) {
+    const [year, month, day] = dateString.split('-').map(Number);
+
+    // month is 0-based in JS Date
+    return new Date(year, month - 1, day)
 }
 
 function parseDietPrefs(person_obj, summed_obj){
@@ -59,9 +66,9 @@ function parseDietPrefs(person_obj, summed_obj){
             break;
         }
         case "Single day": {
-            const arrival_date = getDateObjectFromString(person_obj[0]);
-            const departure_date = getDateObjectFromString(person_obj[1]);
-            const request_date_start = getDateObjectFromString(summed_obj["date_start"]);
+            const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
+            const departure_date = getDateObjectFromStringSlash(person_obj[1]);
+            const request_date_start = getDateObjectFromStringDash(summed_obj["date_start"]);
 
             if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_start.getTime()){
                 count_this_person = true;
@@ -69,13 +76,15 @@ function parseDietPrefs(person_obj, summed_obj){
             break;
         }
         case "Day range": {
-            const arrival_date = getDateObjectFromString(person_obj[0]);
-            const departure_date = getDateObjectFromString(person_obj[1]);
-            const request_date_start = getDateObjectFromString(summed_obj["date_start"]);
-            const request_date_end = getDateObjectFromString(summed_obj["date_end"]);
+            const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
+            const departure_date = getDateObjectFromStringSlash(person_obj[1]);
+            const request_date_start = getDateObjectFromStringDash(summed_obj["date_start"]);
+            const request_date_end = getDateObjectFromStringDash(summed_obj["date_end"]);
 
             // console.log(`${person_obj[0]} | ${person_obj[1]} | ${summed_obj["date_start"]} | ${summed_obj["date_end"]}`);
             // console.log(`${arrival_date} | ${departure_date} | ${request_date_start} | ${request_date_end}`);
+
+            console.log(`${arrival_date.getTime()} | ${request_date_start.getTime()} | ${departure_date.getTime()} | ${request_date_end.getTime()}`);
 
             if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_end.getTime()){
                 count_this_person = true;
