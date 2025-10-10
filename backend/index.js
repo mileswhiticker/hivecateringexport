@@ -3,6 +3,7 @@ import express from "express";
 import { google } from "googleapis";
 // import { GoogleAuth } from "google-auth-library";
 import * as dotenv from "dotenv";
+import PDFDocument from "pdfkit";
 
 dotenv.config({path: '../.env'});
 
@@ -12,6 +13,8 @@ const app = express();
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
 
 let auth_status = "Authorisation success.";
+
+let last_generated_json = null;
 
 //project_id and backend port are optional env variables
 if (!process.env.HIVECATER_GOOGLE_CLIENT_EMAIL || !process.env.HIVECATER_GOOGLE_PRIVATE_KEY) {
@@ -46,7 +49,9 @@ const backend_port= process.env.VITE_HIVECATER_BACKEND_PORT || 4000;
 const backend_host= process.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
 
 const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
-const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>`;
+const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>
+<br/><br/>
+Download a generated PDF at <a href="http://${backend_host}:${backend_port}/download">http://${backend_host}:${backend_port}/download</a>`;
 
 function getDateObjectFromStringSlash(dateString) {
     const [day, month, year] = dateString.split('/').map(Number);
@@ -85,10 +90,6 @@ function parseDietPrefs(person_obj, summed_obj, daily_objs, date_request_obj) {
 
             //we need to loop over all dates this person is o site
             let curCheckDate = new Date(arrival_date.getTime());
-
-            if(curCheckDate.getFullYear() !== 2025){
-                console.log(`WARNING: unusual checking year for this person`, person_obj);
-            }
 
             while(curCheckDate.getTime() <= departure_date.getTime()) {
 
@@ -265,6 +266,7 @@ app.get("/api/sheets", async (req, res) => {
         const response_json = {"date_request_obj": date_request,
             "summed_results": summed_results,
             "daily_results": daily_results};
+        last_generated_json = response_json;
 
         //is the user requesting a specific date?
         if(req.query.date_start){
@@ -359,6 +361,74 @@ app.get("/api/sheets", async (req, res) => {
         console.error(api_status, err);
         res.status(500).send(err);
     }
+});
+
+app.get("/download", (req, res) => {
+
+    if(!last_generated_json){
+        res.send("No data loaded from google sheets, unable to generate PDF");
+        return;
+    }
+    // console.log(last_generated_json);
+
+    // Create the document
+    const doc = new PDFDocument();
+
+    // Set headers *before* piping
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="hive_catering_2025.pdf"');
+
+    // Pipe the PDF into the response
+    doc.pipe(res);
+
+    function drawTable(doc, data, startX, startY, colWidths, rowHeight = 25) {
+        data.forEach((row, rowIndex) => {
+            const y = startY + rowIndex * rowHeight;
+
+            row.forEach((cell, colIndex) => {
+                const x = startX + colWidths.slice(0, colIndex).reduce((a, b) => a + b, 0);
+                doc.rect(x, y, colWidths[colIndex], rowHeight).stroke();
+                doc.fontSize(10).text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
+            });
+        });
+    }
+
+    for(let i=1;i<last_generated_json.daily_results.length;i++){
+        let cur_day_obj = last_generated_json.daily_results[i];
+        const dateObj = new Date(cur_day_obj.dateObj);
+        const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
+        doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "center" });
+        if(i < last_generated_json.daily_results.length){
+            doc.moveDown();
+        }
+
+        let tableData = [];
+        for(const key in cur_day_obj) {
+            if(key.substring(0,4) === "date"){
+                continue;
+            }
+
+            let rowData = [];
+            rowData.push(key);
+            rowData.push(cur_day_obj[key]);
+
+            tableData.push(rowData);
+        }
+
+        drawTable(doc, tableData, 50, 125, [325, 175]);
+
+        doc.addPage();
+    }
+
+    // Add PDF content
+    // doc.fontSize(24).text("Confest 2025 Daily Catering Requirements for Hive Kitchen", { align: "center" });
+    // doc.moveDown();
+    // doc.fontSize(14).text("This is a dynamically generated PDF using PDFKit.");
+    // doc.moveDown();
+    // doc.text("It will now close the stream correctly when finished.");
+
+    // IMPORTANT: finalize the PDF and end the response
+    doc.end();
 });
 
 app.listen(backend_port, () => {
