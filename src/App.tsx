@@ -1,45 +1,83 @@
 import { useEffect, useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+
+function formatTable(json: []) {
+    console.log(json);
+    const rows = [];
+    const diets = ["will eat anything","vegan","vegetarian"];
+    let omni = 0;
+    let vegan = 0;
+    let vegetarian = 0;
+    const other:string[] = [];
+
+    //start at 1 to skip the header row
+    for(let i=1; i<json.length; i++){
+        if(json[i][6].toLowerCase() === diets[0]){
+            omni++;
+        } else if(json[i][6].toLowerCase() === diets[1]){
+            vegan++;
+        } else if(json[i][6].toLowerCase() === diets[2]){
+            vegetarian++;
+        } else {
+            other.push(json[i][6]);
+        }
+        // for(let j=0; j<json.length; j++) {
+        //     rows.push(
+        //         <tr key={i}>
+        //             <td>{i}</td>
+        //         </tr>
+        //     );
+        // }
+    }
+    rows.push(
+        <tr key={"omni"}>
+            <td>Omni: {omni}</td>
+        </tr>
+    );
+    rows.push(
+        <tr key={"vegan"}>
+            <td>Vegan: {vegan}</td>
+        </tr>
+    );
+    rows.push(
+        <tr key={"vegetarian"}>
+            <td>Vegetarian: {vegetarian}</td>
+        </tr>
+    );
+    rows.push(
+        <tr key={"other"}>
+            <td>Other: {other.length}</td>
+        </tr>
+    );
+    for(let i=1; i<other.length; i++){
+        rows.push(
+            <tr key={i}>
+                <td><i>{other[i]}</i></td>
+            </tr>);
+    }
+    return (
+        <div><table><tbody>{rows}</tbody></table></div>
+    );
+}
 
 function App() {
 
-    const [count, setCount] = useState(0)
     const backend_port = import.meta.env.VITE_HIVECATER_BACKEND_PORT || 4000;
     const api_url = `http://localhost:${backend_port}/api/sheets`;
-    const [data, setData] = useState([]);
+    const [data, setData] = useState(<div></div>);
+
 
     useEffect(() => {
         fetch(api_url)
             .then((res) => res.json())
-            .then((values) => setData(values))
+            .then((values) => setData(formatTable(values)))
             .catch(console.error);
-    }, []);
+    }, [api_url]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-        <p>{data}</p>
+        <h3>Daily catering requirements for the Hive at Spring Confest 2025</h3>
+        <div>{data}</div>
     </>
   )
 }
