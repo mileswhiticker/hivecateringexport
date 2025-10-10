@@ -11,7 +11,7 @@ const app = express();
 //we only need read access
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
 
-let auth_status = "Authorisation succcess.";
+let auth_status = "Authorisation success.";
 
 //project_id and backend port are optional env variables
 if (!process.env.HIVECATER_GOOGLE_CLIENT_EMAIL || !process.env.HIVECATER_GOOGLE_PRIVATE_KEY) {
