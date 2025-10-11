@@ -81,6 +81,7 @@ function getDateStringFromObjectDash(dateObj){
 }
 
 function parseDietPrefs(person_obj, daily_objs) {
+    // console.log("parseDietPrefs()",person_obj);
 
     const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
     const departure_date = getDateObjectFromStringSlash(person_obj[1]);
@@ -204,13 +205,12 @@ app.get("/api/sheets", async (req, res) => {
         //loop over first spreadsheet and parse into desired format
         const parsed_results = {};
         let summed_results = {};
-        const daily_results = [];
+        let daily_results = [];
         const date_request = {"date_request": "All days"};
 
         const response_json = {"date_request_obj": date_request,
             "summed_results": summed_results,
             "daily_results": daily_results};
-        last_generated_json = response_json;
 
         //is the user requesting a specific date?
         if(req.query.date_start){
@@ -224,7 +224,7 @@ app.get("/api/sheets", async (req, res) => {
             }
         }
 
-        // console.log(response1.data.values);
+        //DTE confirmed volunteers
         let latestval = 0;
         for(let i=1;i<response1.data.values.length;i++)
         {
@@ -259,7 +259,7 @@ app.get("/api/sheets", async (req, res) => {
             parseDietPrefs(parsed_results[i], daily_results);
         }
 
-        //village volunteers
+        //village confirmed volunteers
         for(let i=1;i<response2.data.values.length;i++)
         {
             //skip volunteers that don't want to eat at the hive
@@ -298,7 +298,59 @@ app.get("/api/sheets", async (req, res) => {
             parseDietPrefs(parsed_results[latestval + i], daily_results);
         }
 
+        //sort the parsed json in case the user is only requesting a subset
+        switch(date_request["date_request"]){
+            case "Single day":{
+                const new_daily_results = [];
+
+                //loop over the generated results to take the ones we want
+                for(let i=1;i<daily_results.length;i++){
+                    const check_day = daily_results[i];
+                    if(check_day.dateStr === date_request["date_start"]){
+
+                        //create a new list with just this one
+                        new_daily_results.push(check_day);
+
+                        //finish here
+                        break;
+                    }
+                }
+
+                //flip the lists
+                daily_results = new_daily_results;
+                response_json["daily_results"] = daily_results;
+                break;
+            }
+            case "Day range": {
+                const start_date_obj = new Date(date_request["date_start"]);
+                const end_date_obj = new Date(date_request["date_end"]);
+                const new_daily_results = [];
+
+                //loop over the generated results to take the ones we want
+                for(let i=1;i<daily_results.length;i++){
+                    const check_day = daily_results[i];
+                    const check_date_obj = new Date(check_day.dateStr);
+                    if(check_date_obj.getTime() >= start_date_obj.getTime() && check_date_obj.getTime() <= end_date_obj.getTime()){
+
+                        //add this one to the new list
+                        new_daily_results.push(check_day);
+                    }
+                }
+
+                //flip the lists
+                daily_results = new_daily_results;
+                response_json["daily_results"] = daily_results;
+                break;
+            }
+        }
+
+        //save this json for pdf generation
+        last_generated_json = response_json;
+
+        //set the header to only allow requests from specific origins
         res.header("Access-Control-Allow-Origin", `${frontend_origin}`);
+
+        //send the json back to the user
         res.json(response_json);
     } catch (err) {
         api_status = "ERROR: Failed to read Google Sheets. Check the spreadsheet ID/s and sheet name/s in the environment |";
@@ -309,6 +361,8 @@ app.get("/api/sheets", async (req, res) => {
 
 app.get("/api/download", (req, res) => {
 
+    // console.log(`Beginning PDF generation...`, last_generated_json);
+
     res.header("Access-Control-Allow-Origin", `${frontend_origin}`);
 
     if(!last_generated_json){
@@ -316,16 +370,6 @@ app.get("/api/download", (req, res) => {
         return;
     }
     // console.log(last_generated_json);
-
-    // Create the document
-    const doc = new PDFDocument();
-
-    // Set headers *before* piping
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${pdf_name}"`);
-
-    // Pipe the PDF into the response
-    doc.pipe(res);
 
     function drawTable(doc, data, startX, startY, colWidths, rowHeight = 25) {
         data.forEach((row, rowIndex) => {
@@ -339,14 +383,23 @@ app.get("/api/download", (req, res) => {
         });
     }
 
-    for(let i=1;i<last_generated_json.daily_results.length;i++){
+    // Create the document
+    const doc = new PDFDocument();
+
+    // Set headers *before* piping
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${pdf_name}"`);
+
+    // Pipe the PDF into the response
+    doc.pipe(res);
+
+    for(let i=0;i<last_generated_json.daily_results.length;i++){
         let cur_day_obj = last_generated_json.daily_results[i];
         const dateObj = new Date(cur_day_obj.dateObj);
         const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
         doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "center" });
-        if(i < last_generated_json.daily_results.length){
-            doc.moveDown();
-        }
+
+        doc.moveDown();
 
         let tableData = [];
         for(const key in cur_day_obj) {
@@ -363,7 +416,10 @@ app.get("/api/download", (req, res) => {
 
         drawTable(doc, tableData, 50, 125, [325, 175]);
 
-        doc.addPage();
+        //add a new page if we have more days to export
+        if(i < last_generated_json.daily_results.length - 1){
+            doc.addPage();
+        }
     }
 
     // IMPORTANT: finalize the PDF and end the response
