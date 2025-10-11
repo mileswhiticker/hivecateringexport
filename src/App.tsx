@@ -21,9 +21,11 @@ type day = {
 
 function App() {
 
-    const backend_port = import.meta.env.VITE_HIVECATER_BACKEND_PORT || 4000;
-    const backend_host = import.meta.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
-    const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
+    const backend_url = import.meta.env.VITE_HIVECATER_BACKEND_ORIGIN || "http://localhost:4000";
+    const api_url = `${backend_url}/api/sheets`;
+
+    //to use later when i add a download button for the PDF
+    // const download_url = `${backend_url}/download`;
 
     const [dietTable, setDietTable] = useState<JSX.Element[]>();
     const [dateHeading, setDateHeading] = useState("Select the desired dates then click the button to continue");

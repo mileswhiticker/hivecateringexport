@@ -45,16 +45,15 @@ function get_uuid(){
 
 const sheets = google.sheets({ version: "v4", auth });
 
+const backend_origin = process.env.VITE_HIVECATER_BACKEND_ORIGIN || "http://localhost:4000";
 const backend_port = process.env.VITE_HIVECATER_BACKEND_PORT || 4000;
-const backend_host = process.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
-const frontend_port = process.env.VITE_HIVECATER_FRONTEND_PORT || 5000;
-const frontend_host = process.env.VITE_HIVECATER_FRONTEND_HOST || `localhost`;
+const frontend_origin = process.env.VITE_HIVECATER_FRONTEND_ORIGIN || `http://localhost:5000`;
 
-const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
-const frontend_origin = `http://${frontend_host}:${frontend_port}`;
-const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>
+const api_url = `${backend_origin}/api/sheets`;
+const download_url = `${backend_origin}/download`;
+const greeting_message = `Backend running at ${backend_port}. Access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>
 <br/><br/>
-Download a generated PDF at <a href="http://${backend_host}:${backend_port}/download">http://${backend_host}:${backend_port}/download</a>`;
+Download a generated PDF at <a href="${download_url}">${download_url}</a>`;
 
 function getDateObjectFromStringSlash(dateString) {
     const [day, month, year] = dateString.split('/').map(Number);
