@@ -48,9 +48,10 @@ const sheets = google.sheets({ version: "v4", auth });
 const backend_origin = process.env.VITE_HIVECATER_BACKEND_ORIGIN || "http://localhost:4000";
 const backend_port = process.env.VITE_HIVECATER_BACKEND_PORT || 4000;
 const frontend_origin = process.env.VITE_HIVECATER_FRONTEND_ORIGIN || `http://localhost:5000`;
+const pdf_name = process.env.VITE_PDF_NAME || "hive_catering_2025.pdf";
 
 const api_url = `${backend_origin}/api/sheets`;
-const download_url = `${backend_origin}/download`;
+const download_url = `${backend_origin}/api/download`;
 const greeting_message = `Backend running at ${backend_port}. Access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>
 <br/><br/>
 Download a generated PDF at <a href="${download_url}">${download_url}</a>`;
@@ -365,7 +366,9 @@ app.get("/api/sheets", async (req, res) => {
     }
 });
 
-app.get("/download", (req, res) => {
+app.get("/api/download", (req, res) => {
+
+    res.header("Access-Control-Allow-Origin", `${frontend_origin}`);
 
     if(!last_generated_json){
         res.send("No data loaded from google sheets, unable to generate PDF");
@@ -378,7 +381,7 @@ app.get("/download", (req, res) => {
 
     // Set headers *before* piping
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", 'attachment; filename="hive_catering_2025.pdf"');
+    res.setHeader("Content-Disposition", `attachment; filename="${pdf_name}"`);
 
     // Pipe the PDF into the response
     doc.pipe(res);
@@ -421,13 +424,6 @@ app.get("/download", (req, res) => {
 
         doc.addPage();
     }
-
-    // Add PDF content
-    // doc.fontSize(24).text("Confest 2025 Daily Catering Requirements for Hive Kitchen", { align: "center" });
-    // doc.moveDown();
-    // doc.fontSize(14).text("This is a dynamically generated PDF using PDFKit.");
-    // doc.moveDown();
-    // doc.text("It will now close the stream correctly when finished.");
 
     // IMPORTANT: finalize the PDF and end the response
     doc.end();
