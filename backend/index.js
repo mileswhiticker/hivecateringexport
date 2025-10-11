@@ -394,11 +394,13 @@ app.get("/api/download", (req, res) => {
     doc.pipe(res);
 
     for(let i=0;i<last_generated_json.daily_results.length;i++){
+        //info for the current day
         let cur_day_obj = last_generated_json.daily_results[i];
+
+        //generate a page title with day name and date
         const dateObj = new Date(cur_day_obj.dateObj);
         const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
         doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "center" });
-
         doc.moveDown();
 
         let tableData = [];
@@ -414,13 +416,25 @@ app.get("/api/download", (req, res) => {
             tableData.push(rowData);
         }
 
-        drawTable(doc, tableData, 50, 125, [325, 175]);
+        //finally, draw the table
+        drawTable(doc, tableData, doc.page.margins.left, 125, [325, 175]);
+        const title_font_size = 30;
+        const logo_height = 133;
+        const logo_width = 373;
+
+        //add an image of the confest logo
+        doc.image('../public/confest-logo.png', doc.page.margins.left, doc.page.height - doc.page.margins.bottom - title_font_size - logo_height - 30, { width: logo_width });
+
+        //generate a page title with some informative text
+        doc.fontSize(title_font_size).text("Spring Confest 2025 Hive Catering", doc.page.margins.left, doc.page.height - 110);
+
 
         //add a new page if we have more days to export
         if(i < last_generated_json.daily_results.length - 1){
             doc.addPage();
         }
     }
+    console.log('pdf doc.page.margins',doc.page.margins);
 
     // IMPORTANT: finalize the PDF and end the response
     doc.end();
