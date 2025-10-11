@@ -80,143 +80,84 @@ function getDateStringFromObjectDash(dateObj){
     return `${dateObj.getFullYear()}-${monthStr}-${dayStr}`;
 }
 
-function parseDietPrefs(person_obj, summed_obj, daily_objs, date_request_obj) {
+function parseDietPrefs(person_obj, daily_objs) {
 
-    //first we need to figure out if this person is onsite for our desired date range
-    let count_this_person = false;
     const arrival_date = getDateObjectFromStringSlash(person_obj[0]);
-
     const departure_date = getDateObjectFromStringSlash(person_obj[1]);
-    switch(date_request_obj["date_request"]){
-        case "All days": {
-            count_this_person = true;
 
-            //we need to loop over all dates this person is on site
-            let curCheckDate = new Date(arrival_date.getTime());
+    //we need to loop over all dates this person is on site
+    let curCheckDate = new Date(arrival_date.getTime());
 
-            while(curCheckDate.getTime() <= departure_date.getTime()) {
+    while(curCheckDate.getTime() <= departure_date.getTime()) {
 
-                // const curCheckDateStr = getDateStringFromObjectDash(curCheckDate);
+        // const curCheckDateStr = getDateStringFromObjectDash(curCheckDate);
 
-                //see if an object for this day already exists
-                let cater_day_obj = null;
-                for(let i=0; i<daily_objs.length; i++) {
-                    const check_cater_day_obj = daily_objs[i];
+        //see if an object for this day already exists
+        let cater_day_obj = null;
+        for(let i=0; i<daily_objs.length; i++) {
+            const check_cater_day_obj = daily_objs[i];
 
-                    //is this our desired date?
-                    if(check_cater_day_obj.dateObj.getTime() === curCheckDate.getTime()) {
-                        //found it
-                        cater_day_obj = check_cater_day_obj;
-                        break;
-                    }
+            //is this our desired date?
+            if(check_cater_day_obj.dateObj.getTime() === curCheckDate.getTime()) {
+                //found it
+                cater_day_obj = check_cater_day_obj;
+                break;
+            }
 
-                    //did we go too far?
-                    // if(check_cater_day_obj.dateObj.getTime() > curCheckDate.getTime()){
-                    //     break;
-                    // }
+            //did we go too far?
+            // if(check_cater_day_obj.dateObj.getTime() > curCheckDate.getTime()){
+            //     break;
+            // }
+        }
+
+        //if we didn't find it, create an object to track catering for this date
+        if(!cater_day_obj){
+            cater_day_obj = {dateStr: getDateStringFromObjectDash(curCheckDate), dateObj: new Date(curCheckDate.getTime())};
+
+            //find the place to add it to the list
+            let success = false;
+            for(let i=0; i<daily_objs.length; i++) {
+                const check_cater_day_obj = daily_objs[i];
+
+                if(check_cater_day_obj.dateObj.getTime() > cater_day_obj.dateObj.getTime()) {
+                    daily_objs.splice(i, 0, cater_day_obj);
+                    success = true;
+                    break;
                 }
+            }
+            if(!success){
+                daily_objs.push(cater_day_obj)
+            }
+            // console.log(cater_day_obj.dateStr);
+        }
 
-                //if we didn't find it, create an object to track catering for this date
-                if(!cater_day_obj){
-                    cater_day_obj = {dateStr: getDateStringFromObjectDash(curCheckDate), dateObj: new Date(curCheckDate.getTime())};
+        //anonymised uuids to track the people on this date for debugging
+        // cater_day_obj.people.push(person_obj[7]);
 
-                    //find the place to add it to the list
-                    let success = false;
-                    for(let i=0; i<daily_objs.length; i++) {
-                        const check_cater_day_obj = daily_objs[i];
+        //is this dietary type already in our summed object?
+        if(cater_day_obj[person_obj[2]]){
+            //increase by 1
+            cater_day_obj[person_obj[2]] += 1;
+        } else {
+            //define a new dietary type
+            cater_day_obj[person_obj[2]] = 1;
+        }
 
-                        if(check_cater_day_obj.dateObj.getTime() > cater_day_obj.dateObj.getTime()) {
-                            daily_objs.splice(i, 0, cater_day_obj);
-                            success = true;
-                            break;
-                        }
-                    }
-                    if(!success){
-                        daily_objs.push(cater_day_obj)
-                    }
-                    // console.log(cater_day_obj.dateStr);
-                }
-
-                //anonymised uuids to track the people on this date for debugging
-                // cater_day_obj.people.push(person_obj[7]);
-
-                //is this dietary type already in our summed object?
-                if(cater_day_obj[person_obj[2]]){
-                    //increase by 1
-                    cater_day_obj[person_obj[2]] += 1;
+        //is this person bringing kids?
+        if(person_obj[6])
+        {
+            const numKids = Number(person_obj[6]);
+            if(!isNaN(numKids) && isFinite(numKids) && numKids !== 0){
+                if(!cater_day_obj["Children"]){
+                    cater_day_obj["Children"] = numKids;
                 } else {
-                    //define a new dietary type
-                    cater_day_obj[person_obj[2]] = 1;
+                    cater_day_obj["Children"] += numKids;
                 }
-
-                //is this person bringing kids?
-                if(person_obj[6])
-                {
-                    const numKids = Number(person_obj[6]);
-                    if(!isNaN(numKids) && isFinite(numKids) && numKids !== 0){
-                        if(!cater_day_obj["Children"]){
-                            cater_day_obj["Children"] = numKids;
-                        } else {
-                            cater_day_obj["Children"] += numKids;
-                        }
-                    }
-                }
-
-                //increment the date object by 1 day
-                curCheckDate.setDate(curCheckDate.getDate() + 1);
-            }
-
-            break;
-        }
-        case "Single day": {
-            const request_date_start = getDateObjectFromStringDash(date_request_obj["date_start"]);
-
-            if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_start.getTime()){
-                count_this_person = true;
-            }
-            break;
-        }
-        case "Day range": {
-            const request_date_start = getDateObjectFromStringDash(date_request_obj["date_start"]);
-            const request_date_end = getDateObjectFromStringDash(date_request_obj["date_end"]);
-
-            // console.log(`${person_obj[0]} | ${person_obj[1]} | ${date_request_obj["date_start"]} | ${date_request_obj["date_end"]}`);
-            // console.log(`${arrival_date} | ${departure_date} | ${request_date_start} | ${request_date_end}`);
-
-            // console.log(`${arrival_date.getTime()} | ${request_date_start.getTime()} | ${departure_date.getTime()} | ${request_date_end.getTime()}`);
-
-            if(arrival_date.getTime() <= request_date_start.getTime() && departure_date.getTime() >= request_date_end.getTime()){
-                count_this_person = true;
-            }
-            break;
-        }
-    }
-
-    if(!count_this_person) {
-        //finish early without adding to the summed object
-        return;
-    }
-
-    //is this dietary type already in our summed object?
-    if(summed_obj[person_obj[2]]){
-        //increase by 1
-        summed_obj[person_obj[2]] += 1;
-    } else {
-        //define a new dietary type
-        summed_obj[person_obj[2]] = 1;
-    }
-
-    //is this person bringing kids?
-    if(person_obj[6])
-    {
-        const numKids = Number(person_obj[6]);
-        if(!isNaN(numKids) && isFinite(numKids)){
-            if(!summed_obj["Children"]){
-                summed_obj["Children"] = numKids;
-            } else {
-                summed_obj["Children"] += numKids;
             }
         }
+
+        //increment the date object by 1 day
+        curCheckDate.setDate(curCheckDate.getDate() + 1);
     }
 }
 
@@ -315,7 +256,7 @@ app.get("/api/sheets", async (req, res) => {
             ];
             latestval++;
 
-            parseDietPrefs(parsed_results[i], summed_results, daily_results, date_request);
+            parseDietPrefs(parsed_results[i], daily_results);
         }
 
         //village volunteers
@@ -354,7 +295,7 @@ app.get("/api/sheets", async (req, res) => {
                 //uuid
                 get_uuid(),
             ];
-            parseDietPrefs(parsed_results[latestval + i], summed_results, daily_results, date_request);
+            parseDietPrefs(parsed_results[latestval + i], daily_results);
         }
 
         res.header("Access-Control-Allow-Origin", `${frontend_origin}`);
