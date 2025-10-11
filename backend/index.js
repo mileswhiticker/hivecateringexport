@@ -141,8 +141,13 @@ function parseDietPrefs(person_obj, daily_objs) {
             cater_day_obj[person_obj[2]] = 1;
         }
 
+        //does this person have allergens or other dietary requirements?
+        if(person_obj[3]) {
+            cater_day_obj[person_obj[3]] = 1;
+        }
+
         //is this person bringing kids?
-        if(person_obj[6])
+        if(person_obj[4])
         {
             const numKids = Number(person_obj[6]);
             if(!isNaN(numKids) && isFinite(numKids) && numKids !== 0){
@@ -236,14 +241,8 @@ app.get("/api/sheets", async (req, res) => {
                 //food pref
                 response1.data.values[i][6],
 
-                //allergy
-                response1.data.values[i][7],
-
                 //allergy type
                 response1.data.values[i][8],
-
-                //other health concerns
-                response1.data.values[i][9],
 
                 //children
                 response1.data.values[i][10],
@@ -277,14 +276,8 @@ app.get("/api/sheets", async (req, res) => {
                 //dietary preferences
                 response2.data.values[i][5],
 
-                //allergies (Yes/No)
-                response2.data.values[i][7],
-
                 //list of allergies
                 response2.data.values[i][8],
-
-                //other dietary requirements/health concerns
-                response2.data.values[i][9],
 
                 //accompanying kids
                 response2.data.values[i][6],
