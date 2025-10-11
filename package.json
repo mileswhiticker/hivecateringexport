@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "serve -s dist"
+    "build": "tsc -b && vite build",
+    "serve": "serve -s dist",
+    "deploy": "tsc -b && vite build && serve -s dist"
   },
   "dependencies": {
     "pdfkit": "^0.17.2",
