@@ -11,6 +11,7 @@ const app = express();
 
 //we only need read access
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
+const CUSTOM_DIET_STRING = "I have specific requirements i will let the hive know about";
 
 let auth_status = "Authorisation success.";
 
@@ -104,16 +105,12 @@ function parseDietPrefs(person_obj, daily_objs) {
                 cater_day_obj = check_cater_day_obj;
                 break;
             }
-
-            //did we go too far?
-            // if(check_cater_day_obj.dateObj.getTime() > curCheckDate.getTime()){
-            //     break;
-            // }
         }
 
         //if we didn't find it, create an object to track catering for this date
         if(!cater_day_obj){
             cater_day_obj = {dateStr: getDateStringFromObjectDash(curCheckDate), dateObj: new Date(curCheckDate.getTime())};
+            cater_day_obj["**** Diets ****"] = "";
 
             //find the place to add it to the list
             let success = false;
@@ -139,7 +136,7 @@ function parseDietPrefs(person_obj, daily_objs) {
         if(cater_day_obj[person_obj[2]]){
             //increase by 1
             cater_day_obj[person_obj[2]] += 1;
-        } else {
+        } else if (person_obj[2] !== CUSTOM_DIET_STRING){
             //define a new dietary type
             cater_day_obj[person_obj[2]] = 1;
         }
@@ -427,7 +424,6 @@ app.get("/api/download", (req, res) => {
 
         //generate a page title with some informative text
         doc.fontSize(title_font_size).text("Spring Confest 2025 Hive Catering", doc.page.margins.left, doc.page.height - 110);
-
 
         //add a new page if we have more days to export
         if(i < last_generated_json.daily_results.length - 1){

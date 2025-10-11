@@ -152,7 +152,7 @@ function App() {
 
                 rows.push(
                     <tr key={key}>
-                        <td className="cellBorder"><b>{key}</b>:</td><td className="cellBorder numbers"> {day_obj[key  as keyof typeof day_obj]}</td>
+                        <td className="cellBorder"><b>{key}</b></td><td className="cellBorder numbers"> {day_obj[key  as keyof typeof day_obj]}</td>
                     </tr>
                 );
             }
