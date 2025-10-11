@@ -110,7 +110,7 @@ function parseDietPrefs(person_obj, daily_objs) {
         //if we didn't find it, create an object to track catering for this date
         if(!cater_day_obj){
             cater_day_obj = {dateStr: getDateStringFromObjectDash(curCheckDate), dateObj: new Date(curCheckDate.getTime())};
-            cater_day_obj["**** Diets ****"] = "";
+            // cater_day_obj["**** Diets ****"] = "";
 
             //find the place to add it to the list
             let success = false;
