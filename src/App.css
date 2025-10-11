@@ -9,6 +9,10 @@ td {
   text-align: left;
 }
 
+.numbers {
+  width: 30px;
+}
+
 .cellBorder{
   border-style: solid;
   border-width: thin;

@@ -152,7 +152,7 @@ function App() {
 
                 rows.push(
                     <tr key={key}>
-                        <td className="cellBorder"><b>{key}</b>:</td><td className="cellBorder"> {day_obj[key  as keyof typeof day_obj]}</td>
+                        <td className="cellBorder"><b>{key}</b>:</td><td className="cellBorder numbers"> {day_obj[key  as keyof typeof day_obj]}</td>
                     </tr>
                 );
             }
@@ -187,16 +187,16 @@ function App() {
                 />
                 Single day
             </label>
-            {/*<label>*/}
-            {/*    <input*/}
-            {/*        type="radio"*/}
-            {/*        name="dateRequestInput"*/}
-            {/*        value="Day range"*/}
-            {/*        checked={selectedDateType === "Day range"}*/}
-            {/*        onChange={handleDateRequestChange}*/}
-            {/*    />*/}
-            {/*    Day range*/}
-            {/*</label>*/}
+            <label>
+                <input
+                    type="radio"
+                    name="dateRequestInput"
+                    value="Day range"
+                    checked={selectedDateType === "Day range"}
+                    onChange={handleDateRequestChange}
+                />
+                Day Range
+            </label>
         </em></div>
 
         <div className="lineItem">
