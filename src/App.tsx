@@ -2,6 +2,23 @@ import {type JSX, useState} from 'react'
 import * as React from "react";
 import './App.css'
 
+type backend_json = {
+    date_request_obj: date_request;
+    daily_results: day[];
+    summed_results: [];
+}
+
+type date_request = {
+    date_request: string;
+    date_start: string;
+    date_end: string;
+}
+
+type day = {
+    dateStr: string;
+    dateObj: string;
+}
+
 function App() {
 
     const backend_port = import.meta.env.VITE_HIVECATER_BACKEND_PORT || 4000;
@@ -64,7 +81,7 @@ function App() {
             .catch(console.error);
     }
 
-    function processRequestJson(json){
+    function processRequestJson(json: backend_json){
 
         console.log("processRequestJson()",json)
 
@@ -75,7 +92,7 @@ function App() {
         if(json.date_request_obj.date_request === "Single day"){
             newDateHeading += ` ${json.date_request_obj.date_start}`;
         } else if(json.date_request_obj.date_request === "Day range"){
-            newDateHeading += ` ${json.date_request_obj.date_start} - ${json.date_end}`;
+            newDateHeading += ` ${json.date_request_obj.date_start} - ${json.date_request_obj.date_end}`;
         }
 
         //now apply it
@@ -99,7 +116,7 @@ function App() {
 
                 rows.push(
                     <tr key={key}>
-                        <td className="cellBorder"><b>{key}</b>:</td><td className="cellBorder"> {day_obj[key]}</td>
+                        <td className="cellBorder"><b>{key}</b>:</td><td className="cellBorder"> {day_obj[key  as keyof typeof day_obj]}</td>
                     </tr>
                 );
             }
