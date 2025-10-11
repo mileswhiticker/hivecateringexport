@@ -24,8 +24,8 @@ function App() {
     const backend_url = import.meta.env.VITE_HIVECATER_BACKEND_ORIGIN
     const api_url = `${backend_url}/api/sheets`;
 
-    //to use later when i add a download button for the PDF
-    // const download_url = `${backend_url}/download`;
+    const download_url = `${backend_url}/api/download`;
+    const pdf_name = import.meta.env.VITE_PDF_NAME || "hive_catering_2025.pdf";
 
     const [dietTable, setDietTable] = useState<JSX.Element[]>();
     const [dateHeading, setDateHeading] = useState("Select the desired dates then click the button to continue");
@@ -84,9 +84,42 @@ function App() {
             .catch(console.error);
     }
 
+    const pdfButtonDefaultText = "PDF not ready for download";
+    const pdfButtonReadyText = "Download PDF";
+    const [pdfButtonText, setPdfButtonText] = useState(pdfButtonDefaultText);
+
+    async function onClickDownloadPdf () {
+        try {
+            const response = await fetch(download_url, {
+                method: "GET",
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to download PDF");
+            }
+
+            // Convert the response to a Blob (binary large object)
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            // Create a temporary link to trigger the browser download
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = pdf_name;
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     function processRequestJson(json: backend_json){
 
-        console.log("processRequestJson()",json)
+        console.log("Received JSON from backend:",json)
 
         //construct a subheading showing the date/s for our request
         let newDateHeading = `Catering for: ${json.date_request_obj.date_request}`;
@@ -127,6 +160,7 @@ function App() {
         }
         setDietTable(tables);
         setPollButtonText(pollButtonDefaultText);
+        setPdfButtonText(pdfButtonReadyText);
     }
 
   return (
@@ -201,6 +235,9 @@ function App() {
         <div className="lineItem">
             <button disabled={pollButtonText !== pollButtonDefaultText} onClick={() => pollCateringData()}>
                 {pollButtonText}
+            </button>
+            <button disabled={pdfButtonText === pdfButtonDefaultText} onClick={() => onClickDownloadPdf()}>
+                {pdfButtonText}
             </button>
         </div>
         <div className="lineItem"><em>{dateHeading}</em></div>
