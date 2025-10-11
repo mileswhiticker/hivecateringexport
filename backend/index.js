@@ -48,6 +48,7 @@ const sheets = google.sheets({ version: "v4", auth });
 const backend_port = process.env.VITE_HIVECATER_BACKEND_PORT || 4000;
 const backend_host = process.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
 const frontend_port = process.env.VITE_HIVECATER_FRONTEND_PORT || 5000;
+const frontend_origin = process.env.VITE_HIVECATER_FRONTEND_ORIGIN || `http://localhost:${frontend_port}`;
 
 const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
 const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>
@@ -355,7 +356,7 @@ app.get("/api/sheets", async (req, res) => {
             parseDietPrefs(parsed_results[latestval + i], summed_results, daily_results, date_request);
         }
 
-        res.header("Access-Control-Allow-Origin", `http://localhost:${frontend_port}`);
+        res.header("Access-Control-Allow-Origin", `${frontend_origin}`);
         res.json(response_json);
     } catch (err) {
         api_status = "ERROR: Failed to read Google Sheets. Check the spreadsheet ID/s and sheet name/s in the environment |";
