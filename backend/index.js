@@ -48,9 +48,10 @@ const sheets = google.sheets({ version: "v4", auth });
 const backend_port = process.env.VITE_HIVECATER_BACKEND_PORT || 4000;
 const backend_host = process.env.VITE_HIVECATER_BACKEND_HOST || "localhost";
 const frontend_port = process.env.VITE_HIVECATER_FRONTEND_PORT || 5000;
-const frontend_origin = process.env.VITE_HIVECATER_FRONTEND_ORIGIN || `http://localhost:${frontend_port}`;
+const frontend_host = process.env.VITE_HIVECATER_FRONTEND_HOST || `localhost`;
 
 const api_url = `http://${backend_host}:${backend_port}/api/sheets`;
+const frontend_origin = `http://${frontend_host}:${frontend_port}`;
 const greeting_message = `Backend running on port ${backend_port}, access the raw Google Sheets data by going to <a href="${api_url}">${api_url}</a>
 <br/><br/>
 Download a generated PDF at <a href="http://${backend_host}:${backend_port}/download">http://${backend_host}:${backend_port}/download</a>`;
@@ -90,7 +91,7 @@ function parseDietPrefs(person_obj, summed_obj, daily_objs, date_request_obj) {
         case "All days": {
             count_this_person = true;
 
-            //we need to loop over all dates this person is o site
+            //we need to loop over all dates this person is on site
             let curCheckDate = new Date(arrival_date.getTime());
 
             while(curCheckDate.getTime() <= departure_date.getTime()) {
