@@ -12,6 +12,7 @@ const app = express();
 //we only need read access
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
 const CUSTOM_DIET_STRING = "I have specific requirements i will let the hive know about";
+const OMNI_DIET_STRING = "Will eat anything";
 
 let auth_status = "Authorisation success.";
 
@@ -132,30 +133,51 @@ function parseDietPrefs(person_obj, daily_objs) {
         //anonymised uuids to track the people on this date for debugging
         // cater_day_obj.people.push(person_obj[7]);
 
+        //combine vegan and vegetarian
+        let diet_pref = person_obj[2];
+        if(diet_pref === "Vegan" || diet_pref === "Vegetarian ") {
+            diet_pref = "Vegans and Vegetarians"
+        }
         //is this dietary type already in our summed object?
-        if(cater_day_obj[person_obj[2]]){
+        if(cater_day_obj[diet_pref]){
             //increase by 1
-            cater_day_obj[person_obj[2]] += 1;
-        } else if (person_obj[2] !== CUSTOM_DIET_STRING){
+            cater_day_obj[diet_pref] += 1;
+        } else if (diet_pref !== CUSTOM_DIET_STRING){
             //define a new dietary type
-            cater_day_obj[person_obj[2]] = 1;
+
+            cater_day_obj[diet_pref] = 1;
         }
 
         //does this person have allergens or other dietary requirements?
         if(person_obj[3]) {
-            cater_day_obj[person_obj[3]] = 1;
+            if(cater_day_obj[person_obj[3]]) {
+                //increase by 1
+                cater_day_obj[person_obj[3]] += 1;
+            } else {
+                //define a new dietary type
+                cater_day_obj[person_obj[3]] = 1;
+            }
         }
 
         //is this person bringing kids?
         if(person_obj[4])
         {
-            const numKids = Number(person_obj[6]);
+            // console.log(`found a person with kids: ${person_obj[4]}`);
+            const numKids = Number(person_obj[4]);
             if(!isNaN(numKids) && isFinite(numKids) && numKids !== 0){
-                if(!cater_day_obj["Children"]){
-                    cater_day_obj["Children"] = numKids;
+
+                // instead of tracking children separately, give them the same diet as their parents
+                if(diet_pref !== CUSTOM_DIET_STRING) {
+                    cater_day_obj[diet_pref] += numKids;
                 } else {
-                    cater_day_obj["Children"] += numKids;
+                    cater_day_obj[OMNI_DIET_STRING] += numKids;
                 }
+
+                // if(!cater_day_obj["Children"]){
+                //     cater_day_obj["Children"] = numKids;
+                // } else {
+                //     cater_day_obj["Children"] += numKids;
+                // }
             }
         }
 
@@ -390,7 +412,7 @@ app.get("/api/download", (req, res) => {
         //generate a page title with day name and date
         const dateObj = new Date(cur_day_obj.dateObj);
         const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
-        doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "center" });
+        doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "right" });
         doc.moveDown();
 
         let tableData = [];
@@ -413,7 +435,7 @@ app.get("/api/download", (req, res) => {
         const logo_width = 373;
 
         //add an image of the confest logo
-        doc.image('../public/confest-logo.png', doc.page.margins.left, doc.page.height - doc.page.margins.bottom - title_font_size - logo_height - 30, { width: logo_width });
+        doc.image('../public/confest-logo.png', doc.page.margins.left, doc.page.margins.top, { width: logo_width / 3 });
 
         //generate a page title with some informative text
         doc.fontSize(title_font_size).text("Spring Confest 2025 Hive Catering", doc.page.margins.left, doc.page.height - 110);
