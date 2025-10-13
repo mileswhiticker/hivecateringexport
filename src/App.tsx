@@ -150,9 +150,28 @@ function App() {
                     continue;
                 }
 
+                const num_of_people = Number(day_obj[key  as keyof typeof day_obj]);
+                let hungryFaces = "";
+                let faceProgress = 0;
+                if(num_of_people > 1) {
+                    if(num_of_people <= 3) {
+                        hungryFaces += "🤤";
+                    } else {
+                        for(let i=0; i<num_of_people;i++){
+                            faceProgress += 0.3;
+                            if(faceProgress >= 1){
+                                faceProgress -= 1;
+                                hungryFaces += "🤤";
+                            }
+                        }
+                    }
+                }
+
                 rows.push(
                     <tr key={key}>
-                        <td className="cellBorder"><b>{key}</b></td><td className="cellBorder numbers"> {day_obj[key  as keyof typeof day_obj]}</td>
+                        <td className="cellBorder cellDietary"><b>{key}</b></td>
+                        <td className="cellBorder cellNumbers"> {num_of_people}</td>
+                        <td className="cellFace">{hungryFaces}</td>
                     </tr>
                 );
             }

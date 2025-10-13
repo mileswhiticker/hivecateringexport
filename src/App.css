@@ -9,16 +9,25 @@ td {
   text-align: left;
 }
 
-.numbers {
+.cellNumbers {
   width: 30px;
 }
 
-.cellBorder{
+.cellFace {
+  font-size: 0.6em;
+  width: 480px;
+}
+
+.cellDietary {
+  width: 530px;
+}
+
+.cellBorder {
   border-style: solid;
   border-width: thin;
 }
 
-table{
+table {
   width: 100%;
   margin-bottom: 1em;
 }
