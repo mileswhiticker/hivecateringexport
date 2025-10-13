@@ -468,7 +468,25 @@ app.get("/api/download", (req, res) => {
             row.forEach((cell, colIndex) => {
                 const x = startX + colWidths.slice(0, colIndex).reduce((a, b) => a + b, 0);
                 doc.rect(x, y, colWidths[colIndex], rowHeight).stroke();
-                doc.fontSize(10).text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
+
+                if(colIndex === 2) {
+                    //draw emojis
+                    //cell
+                    if(cell > 1) {
+                        let num_faces = 1;
+                        if(cell > 10) {
+                            num_faces = cell / 10;
+                        }
+
+                        const faceWidth = 10;
+                        for(let j = 0; j < num_faces; j++) {
+                            doc.image('../public/hungryface.png', x + j * faceWidth, y + (rowHeight / 2) - (faceWidth / 2), { width: faceWidth });
+                        }
+                    }
+                } else {
+                    //regular text
+                    doc.fontSize(10).text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
+                }
             });
         });
     }
@@ -501,13 +519,14 @@ app.get("/api/download", (req, res) => {
 
             let rowData = [];
             rowData.push(key);
-            rowData.push(cur_day_obj[key]);
+            rowData.push(Number(cur_day_obj[key]));
+            rowData.push(Number(cur_day_obj[key]));
 
             tableData.push(rowData);
         }
 
         //finally, draw the table
-        drawTable(doc, tableData, doc.page.margins.left, 125, [325, 175]);
+        drawTable(doc, tableData, doc.page.margins.left, 125, [310, 30, 125]);
         const title_font_size = 30;
         const logo_height = 133;
         const logo_width = 373;
