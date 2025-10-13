@@ -82,6 +82,59 @@ function getDateStringFromObjectDash(dateObj){
     return `${dateObj.getFullYear()}-${monthStr}-${dayStr}`;
 }
 
+function sortDailyDietaries(daily_obj){
+    const ordered_properties = [];
+    const ordered_values = [];
+    const new_daily_obj = {};
+    for(const key in daily_obj) {
+        //skip fields that start with date because we only want diet prefs in the table
+        if (key.substring(0, 4) === "date") {
+            new_daily_obj[key] = daily_obj[key];
+            continue;
+        }
+
+        //if the amount is greater than 1, add it to the end
+        //there is a whole bunch of unique dietaries that don't need sorting
+        if(daily_obj[key] === 1) {
+            ordered_properties.push(key);
+            ordered_values.push(1);
+            continue;
+        }
+
+        //sort it in
+        let success = false;
+        for(let i=0; i<ordered_values.length; i++){
+            if(ordered_values[i] <= daily_obj[key]) {
+
+                //insert this one in the order
+                ordered_properties.splice(i, 0, key);
+                ordered_values.splice(i, 0, daily_obj[key]);
+                success = true;
+
+                break;
+            }
+        }
+
+        //did we find a place for it? if not then put it at the end
+        if(!success)
+        {
+            ordered_properties.push(key);
+            ordered_values.push(daily_obj[key]);
+        }
+    }
+
+    //for debugging
+    // daily_obj.ordered_properties = ordered_properties;
+    // daily_obj.ordered_values = ordered_values;
+
+    //construct the new object
+    for(let i=0; i<ordered_values.length; i++){
+        new_daily_obj[ordered_properties[i]] = ordered_values[i];
+    }
+
+    return new_daily_obj;
+}
+
 function parseDietPrefs(person_obj, daily_objs) {
     // console.log("parseDietPrefs()",person_obj);
 
@@ -110,7 +163,10 @@ function parseDietPrefs(person_obj, daily_objs) {
 
         //if we didn't find it, create an object to track catering for this date
         if(!cater_day_obj){
-            cater_day_obj = {dateStr: getDateStringFromObjectDash(curCheckDate), dateObj: new Date(curCheckDate.getTime())};
+            cater_day_obj = {
+                dateStr: getDateStringFromObjectDash(curCheckDate),
+                dateObj: new Date(curCheckDate.getTime()),
+            };
             // cater_day_obj["**** Diets ****"] = "";
 
             //find the place to add it to the list
@@ -310,51 +366,73 @@ app.get("/api/sheets", async (req, res) => {
             parseDietPrefs(parsed_results[latestval + i], daily_results);
         }
 
+        const new_daily_results = [];
+
         //sort the parsed json in case the user is only requesting a subset
         switch(date_request["date_request"]){
             case "Single day":{
-                const new_daily_results = [];
 
                 //loop over the generated results to take the ones we want
-                for(let i=1;i<daily_results.length;i++){
+                for(let i=0;i<daily_results.length;i++){
                     const check_day = daily_results[i];
                     if(check_day.dateStr === date_request["date_start"]){
 
+                        //sort it by number of people
+                        const sorted_day_obj = sortDailyDietaries(check_day);
+
                         //create a new list with just this one
-                        new_daily_results.push(check_day);
+                        new_daily_results.push(sorted_day_obj);
 
                         //finish here
                         break;
                     }
                 }
-
-                //flip the lists
-                daily_results = new_daily_results;
-                response_json["daily_results"] = daily_results;
                 break;
             }
             case "Day range": {
                 const start_date_obj = new Date(date_request["date_start"]);
                 const end_date_obj = new Date(date_request["date_end"]);
-                const new_daily_results = [];
 
                 //loop over the generated results to take the ones we want
-                for(let i=1;i<daily_results.length;i++){
+                for(let i=0;i<daily_results.length;i++){
                     const check_day = daily_results[i];
                     const check_date_obj = new Date(check_day.dateStr);
-                    if(check_date_obj.getTime() >= start_date_obj.getTime() && check_date_obj.getTime() <= end_date_obj.getTime()){
 
-                        //add this one to the new list
-                        new_daily_results.push(check_day);
+                    //if this is too early, move to the next one
+                    if(check_date_obj.getTime() < start_date_obj.getTime()) {
+                        continue;
                     }
-                }
 
-                //flip the lists
-                daily_results = new_daily_results;
-                response_json["daily_results"] = daily_results;
+                    //if this is too late, we can finish here
+                    if(check_date_obj.getTime() > end_date_obj.getTime()) {
+                        break;
+                    }
+
+                    //sort it by number of people
+                    const sorted_day_obj = sortDailyDietaries(check_day);
+
+                    //add this one to the new list
+                    new_daily_results.push(sorted_day_obj);
+                }
+                break;
+            }
+            default:{
+                for(let i=0;i<daily_results.length;i++) {
+                    const check_day = daily_results[i];
+
+                    //sort it by number of people
+                    const sorted_day_obj = sortDailyDietaries(check_day);
+
+                    //add this one to the new list
+                    new_daily_results.push(sorted_day_obj);
+                }
                 break;
             }
         }
+
+        //flip the lists
+        daily_results = new_daily_results;
+        response_json["daily_results"] = daily_results;
 
         //save this json for pdf generation
         last_generated_json = response_json;
@@ -445,7 +523,7 @@ app.get("/api/download", (req, res) => {
             doc.addPage();
         }
     }
-    console.log('pdf doc.page.margins',doc.page.margins);
+    // console.log('pdf doc.page.margins',doc.page.margins);
 
     // IMPORTANT: finalize the PDF and end the response
     doc.end();
