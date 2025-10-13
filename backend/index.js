@@ -190,8 +190,8 @@ function parseDietPrefs(person_obj, daily_objs) {
         // cater_day_obj.people.push(person_obj[7]);
 
         //combine vegan and vegetarian
-        let diet_pref = person_obj[2];
-        if(diet_pref === "Vegan" || diet_pref === "Vegetarian ") {
+        let diet_pref = person_obj[2].trim();
+        if(diet_pref === "Vegan" || diet_pref === "Vegetarian") {
             diet_pref = "Vegans and Vegetarians"
         }
         //is this dietary type already in our summed object?
@@ -492,7 +492,9 @@ app.get("/api/download", (req, res) => {
     }
 
     // Create the document
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({
+        margins: { top: 50, bottom: 50, left: 72, right: 72 }
+    });
 
     // Set headers *before* piping
     res.setHeader("Content-Type", "application/pdf");
@@ -509,7 +511,7 @@ app.get("/api/download", (req, res) => {
         const dateObj = new Date(cur_day_obj.dateObj);
         const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
         doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "right" });
-        doc.moveDown();
+        // doc.moveDown();
 
         let tableData = [];
         for(const key in cur_day_obj) {
@@ -526,16 +528,19 @@ app.get("/api/download", (req, res) => {
         }
 
         //finally, draw the table
-        drawTable(doc, tableData, doc.page.margins.left, 125, [310, 30, 125]);
+        drawTable(doc, tableData, doc.page.margins.left, 100, [310, 30, 125]);
         const title_font_size = 30;
         const logo_height = 133;
         const logo_width = 373;
 
         //add an image of the confest logo
-        doc.image('../public/confest-logo.png', doc.page.margins.left, doc.page.margins.top, { width: logo_width / 3 });
+        doc.image('../public/confest-logo.png', doc.page.margins.left, doc.page.margins.top - 10, { width: logo_width / 3 });
 
         //generate a page title with some informative text
-        doc.fontSize(title_font_size).text("Spring Confest 2025 Hive Catering", doc.page.margins.left, doc.page.height - 110);
+        //make sure it's positioned precisely at the bottom of the page
+        const footer_text = "Spring Confest 2025 Hive Catering";
+        const height_of_text = doc.fontSize(title_font_size).heightOfString(footer_text, {width: 500});
+        doc.fontSize(title_font_size).text(footer_text, doc.page.margins.left, doc.page.height - doc.page.margins.bottom - height_of_text);
 
         //add a new page if we have more days to export
         if(i < last_generated_json.daily_results.length - 1){
