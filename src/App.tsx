@@ -6,6 +6,7 @@ type backend_json = {
     date_request_obj: date_request;
     daily_results: day[];
     summed_results: [];
+    biggest_diet: number;
 }
 
 type date_request = {
@@ -157,10 +158,14 @@ function App() {
                     if(num_of_people <= 3) {
                         hungryFaces += "🤤";
                     } else {
+                        const max_faces = 40;
+                        // const max_width = 482;
+                        const face_quota = json.biggest_diet/max_faces;
+
                         for(let i=0; i<num_of_people;i++){
-                            faceProgress += 0.3;
-                            if(faceProgress >= 1){
-                                faceProgress -= 1;
+                            faceProgress += 1;
+                            if(faceProgress >= face_quota){
+                                faceProgress -= face_quota;
                                 hungryFaces += "🤤";
                             }
                         }

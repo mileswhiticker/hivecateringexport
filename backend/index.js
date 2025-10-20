@@ -64,12 +64,12 @@ function getDateObjectFromStringSlash(dateString) {
     return new Date(year, month - 1, day);
 }
 
-function getDateObjectFromStringDash(dateString) {
-    const [year, month, day] = dateString.split('-').map(Number);
-
-    // month is 0-based in JS Date
-    return new Date(year, month - 1, day)
-}
+// function getDateObjectFromStringDash(dateString) {
+//     const [year, month, day] = dateString.split('-').map(Number);
+//
+//     // month is 0-based in JS Date
+//     return new Date(year, month - 1, day)
+// }
 
 function getDateStringFromObjectDash(dateObj){
 
@@ -86,6 +86,7 @@ function sortDailyDietaries(daily_obj){
     const ordered_properties = [];
     const ordered_values = [];
     const new_daily_obj = {};
+    let biggest_diet = 0;
     for(const key in daily_obj) {
         //skip fields that start with date because we only want diet prefs in the table
         if (key.substring(0, 4) === "date") {
@@ -99,6 +100,11 @@ function sortDailyDietaries(daily_obj){
             ordered_properties.push(key);
             ordered_values.push(1);
             continue;
+        }
+
+        const checkval = daily_obj[key];
+        if(checkval > biggest_diet) {
+            biggest_diet = checkval;
         }
 
         //sort it in
@@ -131,6 +137,8 @@ function sortDailyDietaries(daily_obj){
     for(let i=0; i<ordered_values.length; i++){
         new_daily_obj[ordered_properties[i]] = ordered_values[i];
     }
+
+    new_daily_obj["biggest_diet"] = biggest_diet;
 
     return new_daily_obj;
 }
@@ -290,7 +298,8 @@ app.get("/api/sheets", async (req, res) => {
 
         const response_json = {"date_request_obj": date_request,
             "summed_results": summed_results,
-            "daily_results": daily_results};
+            "daily_results": daily_results,
+            "biggest_diet": 0};
 
         //is the user requesting a specific date?
         if(req.query.date_start){
@@ -380,6 +389,12 @@ app.get("/api/sheets", async (req, res) => {
                         //sort it by number of people
                         const sorted_day_obj = sortDailyDietaries(check_day);
 
+                        //these are ordered so just grab the first one
+                        response_json["biggest_diet"] = sorted_day_obj["biggest_diet"];
+
+                        //dont need this any more
+                        delete sorted_day_obj["biggest_diet"];
+
                         //create a new list with just this one
                         new_daily_results.push(sorted_day_obj);
 
@@ -411,6 +426,14 @@ app.get("/api/sheets", async (req, res) => {
                     //sort it by number of people
                     const sorted_day_obj = sortDailyDietaries(check_day);
 
+                    //these are ordered so just grab the first one of the day
+                    if(sorted_day_obj["biggest_diet"] > response_json["biggest_diet"]){
+                        response_json["biggest_diet"] = sorted_day_obj["biggest_diet"];
+                    }
+
+                    //dont need this any more
+                    delete sorted_day_obj["biggest_diet"];
+
                     //add this one to the new list
                     new_daily_results.push(sorted_day_obj);
                 }
@@ -422,6 +445,14 @@ app.get("/api/sheets", async (req, res) => {
 
                     //sort it by number of people
                     const sorted_day_obj = sortDailyDietaries(check_day);
+
+                    //find the largest dietary type
+                    if(sorted_day_obj["biggest_diet"] > response_json["biggest_diet"]){
+                        response_json["biggest_diet"] = sorted_day_obj["biggest_diet"];
+                    }
+
+                    //dont need this any more
+                    delete sorted_day_obj["biggest_diet"];
 
                     //add this one to the new list
                     new_daily_results.push(sorted_day_obj);
@@ -461,7 +492,7 @@ app.get("/api/download", (req, res) => {
     }
     // console.log(last_generated_json);
 
-    function drawTable(doc, data, startX, startY, colWidths, rowHeight = 25) {
+    function drawTable(doc, data, startX, startY, colWidths, rowHeight = 25, biggest_diet) {
         data.forEach((row, rowIndex) => {
             const y = startY + rowIndex * rowHeight;
 
@@ -474,8 +505,9 @@ app.get("/api/download", (req, res) => {
                     //cell
                     if(cell > 1) {
                         let num_faces = 1;
-                        if(cell > 10) {
-                            num_faces = cell / 10;
+                        const max_faces = 12;
+                        if(cell > 5) {
+                            num_faces = max_faces * cell / biggest_diet;
                         }
 
                         const faceWidth = 10;
@@ -528,9 +560,9 @@ app.get("/api/download", (req, res) => {
         }
 
         //finally, draw the table
-        drawTable(doc, tableData, doc.page.margins.left, 100, [310, 30, 125]);
+        drawTable(doc, tableData, doc.page.margins.left, 100, [310, 30, 125], 25, last_generated_json["biggest_diet"]);
         const title_font_size = 30;
-        const logo_height = 133;
+        // const logo_height = 133;
         const logo_width = 373;
 
         //add an image of the confest logo
