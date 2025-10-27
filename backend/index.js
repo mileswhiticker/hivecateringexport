@@ -59,6 +59,9 @@ const greeting_message = `Backend running at ${backend_port}. Access the raw Goo
 Download a generated PDF at <a href="${download_url}">${download_url}</a>`;
 
 function getDateObjectFromStringSlash(dateString) {
+    if(typeof dateString != "string"){
+        return new Date(2025, 9, 0);
+    }
     const [day, month, year] = dateString.split('/').map(Number);
     // month is 0-based in JS Date
     return new Date(year, month - 1, day);
@@ -198,10 +201,20 @@ function parseDietPrefs(person_obj, daily_objs) {
         // cater_day_obj.people.push(person_obj[7]);
 
         //combine vegan and vegetarian
-        let diet_pref = person_obj[2].trim();
-        if(diet_pref === "Vegan" || diet_pref === "Vegetarian") {
-            diet_pref = "Vegans and Vegetarians"
+        let diet_pref = "Unknown/No response";
+        if(person_obj[2]){
+            diet_pref = person_obj[2].trim();
         }
+
+        //treat these all as omnis
+        if(diet_pref === CUSTOM_DIET_STRING){
+            // console.log(person_obj);
+            person_obj[2] = OMNI_DIET_STRING;
+            diet_pref = OMNI_DIET_STRING;
+        }
+        // if(diet_pref === "Vegan" || diet_pref === "Vegetarian") {
+        //     diet_pref = "Vegans and Vegetarians"
+        // }
         //is this dietary type already in our summed object?
         if(cater_day_obj[diet_pref]){
             //increase by 1
@@ -336,8 +349,13 @@ app.get("/api/sheets", async (req, res) => {
 
                 //uuid
                 get_uuid(),
+
+                //name
+                // response1.data.values[i][2],
+
             ];
             latestval++;
+            // console.log("parsed_results",parsed_results);
 
             parseDietPrefs(parsed_results[i], daily_results);
         }
