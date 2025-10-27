@@ -170,6 +170,12 @@ function App() {
                             }
                         }
                     }
+
+                    //make sure there is at least one smiley face if there is more than 1 person
+                    if(hungryFaces === "")
+                    {
+                        hungryFaces = "🤤";
+                    }
                 }
 
                 rows.push(
