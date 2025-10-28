@@ -13,6 +13,7 @@ const app = express();
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
 const CUSTOM_DIET_STRING = "I have specific requirements i will let the hive know about";
 const OMNI_DIET_STRING = "Will eat anything";
+const NO_RESPONSE_STRING = "No response";
 
 let auth_status = "Authorisation success.";
 
@@ -201,7 +202,7 @@ function parseDietPrefs(person_obj, daily_objs) {
         // cater_day_obj.people.push(person_obj[7]);
 
         //combine vegan and vegetarian
-        let diet_pref = "Unknown/No response";
+        let diet_pref = NO_RESPONSE_STRING;
         if(person_obj[2]){
             diet_pref = person_obj[2].trim();
         }
