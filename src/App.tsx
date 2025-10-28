@@ -20,6 +20,11 @@ type day = {
     dateObj: string;
 }
 
+const STRING_TODAY = "Today's date";
+const STRING_ALLDAYS = "All days";
+const STRING_DAYRANGE = "Day range";
+const STRING_SINGLEDAY = "Single day";
+
 function App() {
 
     const backend_url = import.meta.env.VITE_HIVECATER_BACKEND_ORIGIN
@@ -30,7 +35,7 @@ function App() {
 
     const [dietTable, setDietTable] = useState<JSX.Element[]>();
     const [dateHeading, setDateHeading] = useState("Select the desired dates then click the button to continue");
-    const [selectedDateType, setDateType] = useState("All days");
+    const [selectedDateType, setDateType] = useState(STRING_TODAY);
 
     const [inputStartDate, setInputStartDate] = useState("2025-10-10");
     const [inputEndDate, setInputEndDate] = useState("2025-11-10");
@@ -38,8 +43,10 @@ function App() {
     const handleDateRequestChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setDateType(event.target.value);
 
-        //safety checking for date ranges
-        if(event.target.value === "Day range") {
+        // console.log(`handleDateRequestChange() ${event.target.value}`);
+
+        if(event.target.value === STRING_DAYRANGE) {
+            //safety checking for date ranges
             const startDate = new Date(inputStartDate);
             const endDate = new Date(inputEndDate);
 
@@ -68,12 +75,22 @@ function App() {
         setPollButtonText(pollButtonLoadingText);
         // setDietTable(<div></div>);
 
+        let request_start_date = inputStartDate;
+        if(selectedDateType === STRING_TODAY) {
+            const todaysDateObject = new Date();
+            const todaysDateAsString = todaysDateObject.toISOString().split('T')[0];
+
+            //doesnt resolve immediately so we cant set it here
+            // setInputStartDate(todaysDateAsString);
+            request_start_date = todaysDateAsString;
+        }
+
         //is the user requesting a specific date range?
         let api_url_query = api_url;
         // console.log(`user is requesting date type: ${selectedDateType}`);
-        if(selectedDateType !== "All days"){
-            api_url_query += `?date_start=${inputStartDate}`;
-            if(selectedDateType === "Day range") {
+        if(selectedDateType !== STRING_ALLDAYS){
+            api_url_query += `?date_start=${request_start_date}`;
+            if(selectedDateType === STRING_DAYRANGE) {
                 api_url_query += `&date_end=${inputEndDate}`;
             }
         }
@@ -201,41 +218,51 @@ function App() {
                 <input
                     type="radio"
                     name="dateRequestInput"
-                    value="All days"
-                    checked={selectedDateType === "All days"}
+                    value={STRING_TODAY}
+                    checked={selectedDateType === STRING_TODAY}
                     onChange={handleDateRequestChange}
                 />
-                All days
+                {STRING_TODAY}
             </label>
             <label>
                 <input
                     type="radio"
                     name="dateRequestInput"
-                    value="Single day"
-                    checked={selectedDateType === "Single day"}
+                    value={STRING_ALLDAYS}
+                    checked={selectedDateType === STRING_ALLDAYS}
                     onChange={handleDateRequestChange}
                 />
-                Single day
+                {STRING_ALLDAYS}
             </label>
             <label>
                 <input
                     type="radio"
                     name="dateRequestInput"
-                    value="Day range"
-                    checked={selectedDateType === "Day range"}
+                    value={STRING_SINGLEDAY}
+                    checked={selectedDateType === STRING_SINGLEDAY}
                     onChange={handleDateRequestChange}
                 />
-                Day Range
+                {STRING_SINGLEDAY}
+            </label>
+            <label>
+                <input
+                    type="radio"
+                    name="dateRequestInput"
+                    value={STRING_DAYRANGE}
+                    checked={selectedDateType === STRING_DAYRANGE}
+                    onChange={handleDateRequestChange}
+                />
+                {STRING_DAYRANGE}
             </label>
         </em></div>
 
         <div className="lineItem">
 
         {/* when the user wants all days */}
-        <div className={selectedDateType === "All days" ? "" : "hidden"}><br/></div>
+        <div className={selectedDateType === STRING_ALLDAYS ? "" : "hidden"}><br/></div>
 
         {/* when the user wants a single day */}
-        <div className={selectedDateType === "Single day" ? "" : "hidden"}><input
+        <div className={selectedDateType === STRING_SINGLEDAY ? "" : "hidden"}><input
             type="date"
             name="event"
             min="2025-10-01"
@@ -245,7 +272,7 @@ function App() {
         /></div>
 
         {/* when the user wants a range of days */}
-        <div className={selectedDateType === "Day range" ? "" : "hidden"}>Between <input
+        <div className={selectedDateType === STRING_DAYRANGE ? "" : "hidden"}>Between <input
             type="date"
             name="event"
             min="2025-10-01"
