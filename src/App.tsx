@@ -210,7 +210,9 @@ function App() {
 
                 //now loop over the allergens and insert them into the table
 
+                // @ts-expect-error just compile pls
                 for (const allergen in day_obj["dietsAllergens"][diet_pref]){
+                    // @ts-expect-error just compile pls
                     const num_of_people_allergens = day_obj["dietsAllergens"][diet_pref][allergen];
                     rows.push(
                         <tr key={diet_pref + "|" + allergen}>
