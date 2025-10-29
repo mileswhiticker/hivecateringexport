@@ -202,7 +202,7 @@ function parseDietPrefs(person_obj, daily_objs) {
         //anonymised uuids to track the people on this date for debugging
         // cater_day_obj.people.push(person_obj[7]);
 
-        //combine vegan and vegetarian
+        //grab the diet preference
         let diet_pref = NO_RESPONSE_STRING;
         if(person_obj[2]){
             diet_pref = person_obj[2].trim();
@@ -229,7 +229,7 @@ function parseDietPrefs(person_obj, daily_objs) {
 
         //does this person have allergens or other dietary requirements?
         if(person_obj[3]) {
-            const allergen = person_obj[3];
+            const allergen = person_obj[3].trim();
             //add it to the diets list
             // if(cater_day_obj[person_obj[3]]) {
             //     //increase by 1
@@ -367,6 +367,11 @@ app.get("/api/sheets", async (req, res) => {
             ];
             latestval++;
             // console.log("parsed_results",parsed_results);
+
+            // if they didn't enter a dietary preference, skip them
+            if(!parsed_results[i][2]){
+                continue;
+            }
 
             parseDietPrefs(parsed_results[i], daily_results);
         }
