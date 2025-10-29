@@ -160,7 +160,7 @@ function App() {
             const dateObj = new Date(day_obj.dateObj);
             const day_name = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
 
-            const rows = [<tr key={day_index}><td>{day_name} {day_obj.dateStr}</td></tr>];
+            const rows = [<tr key={day_index}><td>{day_name} {day_obj.dateStr}, total volunteers: {day_obj.total}</td></tr>];
 
             for(const diet_pref in day_obj) {
                 //skip fields that start with date because we only want diet prefs in the table
@@ -168,8 +168,8 @@ function App() {
                     continue;
                 }
 
-                //skip this field because it needs additional processing (todo)
-                if(diet_pref === "dietsAllergens"){
+                //skip these fields because they need additional processing
+                if(diet_pref === "dietsAllergens" || diet_pref === "total"){
                     continue;
                 }
 
