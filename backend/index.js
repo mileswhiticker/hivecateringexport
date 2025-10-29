@@ -178,7 +178,8 @@ function parseDietPrefs(person_obj, daily_objs) {
             cater_day_obj = {
                 dateStr: getDateStringFromObjectDash(curCheckDate),
                 dateObj: new Date(curCheckDate.getTime()),
-                dietsAllergens: {}
+                dietsAllergens: {},
+                total: 0
             };
             // cater_day_obj["**** Diets ****"] = "";
 
@@ -193,6 +194,8 @@ function parseDietPrefs(person_obj, daily_objs) {
                     break;
                 }
             }
+
+            //couldn't find it, so just add it to the end
             if(!success){
                 daily_objs.push(cater_day_obj)
             }
@@ -226,6 +229,9 @@ function parseDietPrefs(person_obj, daily_objs) {
             cater_day_obj[diet_pref] = 1;
             cater_day_obj["dietsAllergens"][diet_pref] = {};
         }
+
+        //increase the daily total
+        cater_day_obj["total"] += 1;
 
         //does this person have allergens or other dietary requirements?
         if(person_obj[3]) {
@@ -582,6 +588,7 @@ app.get("/api/download", (req, res) => {
         //generate a page title with day name and date
         const dateObj = new Date(cur_day_obj.dateObj);
         const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
+        // doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr + ", total volunteers: " + cur_day_obj.total, { align: "right" });
         doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "right" });
         // doc.moveDown();
 
