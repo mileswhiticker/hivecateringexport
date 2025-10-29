@@ -551,7 +551,13 @@ app.get("/api/download", (req, res) => {
                     }
                 } else {
                     //regular text
-                    doc.fontSize(10).text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
+                    console.log(`${typeof cell}`,cell);
+                    if(typeof cell === "string" && cell.substring(0,3) === "<b>"){
+                        cell = cell.slice(3);
+                        doc.fontSize(10).font('Helvetica-Bold').text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
+                    } else {
+                        doc.fontSize(10).font('Helvetica').text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
+                    }
                 }
             });
         });
@@ -580,17 +586,35 @@ app.get("/api/download", (req, res) => {
         // doc.moveDown();
 
         let tableData = [];
-        for(const key in cur_day_obj) {
-            if(key.substring(0,4) === "date"){
+        for(const diet_pref in cur_day_obj) {
+
+            //dont render these
+            if(diet_pref.substring(0,4) === "date"){
+                continue;
+            }
+
+            //render these separately
+            if(diet_pref === "dietsAllergens"){
                 continue;
             }
 
             let rowData = [];
-            rowData.push(key);
-            rowData.push(Number(cur_day_obj[key]));
-            rowData.push(Number(cur_day_obj[key]));
+            rowData.push(`<b>${diet_pref}`);
+            rowData.push(Number(cur_day_obj[diet_pref]));
+            rowData.push(Number(cur_day_obj[diet_pref]));
 
             tableData.push(rowData);
+
+            //now do allergens
+            for(const allergen in cur_day_obj["dietsAllergens"][diet_pref]) {
+
+                let rowData_allergen = [];
+                rowData_allergen.push(`* ${allergen}`);
+                rowData_allergen.push(Number(cur_day_obj["dietsAllergens"][diet_pref][allergen]));
+                rowData_allergen.push(Number(cur_day_obj["dietsAllergens"][diet_pref][allergen]));
+
+                tableData.push(rowData_allergen);
+            }
         }
 
         //finally, draw the table
