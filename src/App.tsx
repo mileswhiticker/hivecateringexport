@@ -162,18 +162,18 @@ function App() {
 
             const rows = [<tr key={day_index}><td>{day_name} {day_obj.dateStr}</td></tr>];
 
-            for(const key in day_obj) {
+            for(const diet_pref in day_obj) {
                 //skip fields that start with date because we only want diet prefs in the table
-                if(key.substring(0,4) === "date"){
+                if(diet_pref.substring(0,4) === "date"){
                     continue;
                 }
 
                 //skip this field because it needs additional processing (todo)
-                if(key === "dietsAllergens"){
+                if(diet_pref === "dietsAllergens"){
                     continue;
                 }
 
-                const num_of_people = Number(day_obj[key  as keyof typeof day_obj]);
+                const num_of_people = Number(day_obj[diet_pref  as keyof typeof day_obj]);
                 let hungryFaces = "";
                 let faceProgress = 0;
                 if(num_of_people > 1) {
@@ -201,12 +201,25 @@ function App() {
                 }
 
                 rows.push(
-                    <tr key={key}>
-                        <td className="cellBorder cellDietary"><b>{key}</b></td>
+                    <tr key={diet_pref}>
+                        <td className="cellBorder cellDietary"><b>{diet_pref}</b></td>
                         <td className="cellBorder cellNumbers"> {num_of_people}</td>
                         <td className="cellFace">{hungryFaces}</td>
                     </tr>
                 );
+
+                //now loop over the allergens and insert them into the table
+
+                for (const allergen in day_obj["dietsAllergens"][diet_pref]){
+                    const num_of_people_allergens = day_obj["dietsAllergens"][diet_pref][allergen];
+                    rows.push(
+                        <tr key={diet_pref + "|" + allergen}>
+                            <td className="cellBorder cellDietary">* {allergen}</td>
+                            <td className="cellBorder cellNumbers">{num_of_people_allergens}</td>
+                            <td className="cellFace"></td>
+                        </tr>
+                    );
+                }
             }
             tables.push(<table key={day_index}><tbody>{rows}</tbody></table>);
         }
