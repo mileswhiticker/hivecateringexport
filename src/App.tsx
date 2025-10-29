@@ -18,6 +18,7 @@ type date_request = {
 type day = {
     dateStr: string;
     dateObj: string;
+    total: number;
 }
 
 const STRING_TODAY = "Today's date";
