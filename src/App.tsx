@@ -168,6 +168,11 @@ function App() {
                     continue;
                 }
 
+                //skip this field because it needs additional processing (todo)
+                if(key === "dietsAllergens"){
+                    continue;
+                }
+
                 const num_of_people = Number(day_obj[key  as keyof typeof day_obj]);
                 let hungryFaces = "";
                 let faceProgress = 0;

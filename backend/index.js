@@ -178,6 +178,7 @@ function parseDietPrefs(person_obj, daily_objs) {
             cater_day_obj = {
                 dateStr: getDateStringFromObjectDash(curCheckDate),
                 dateObj: new Date(curCheckDate.getTime()),
+                dietsAllergens: {}
             };
             // cater_day_obj["**** Diets ****"] = "";
 
@@ -208,11 +209,11 @@ function parseDietPrefs(person_obj, daily_objs) {
         }
 
         //treat these all as omnis
-        if(diet_pref === CUSTOM_DIET_STRING){
+        /*if(diet_pref === CUSTOM_DIET_STRING){
             // console.log(person_obj);
             person_obj[2] = OMNI_DIET_STRING;
             diet_pref = OMNI_DIET_STRING;
-        }
+        }*/
         // if(diet_pref === "Vegan" || diet_pref === "Vegetarian") {
         //     diet_pref = "Vegans and Vegetarians"
         // }
@@ -220,20 +221,29 @@ function parseDietPrefs(person_obj, daily_objs) {
         if(cater_day_obj[diet_pref]){
             //increase by 1
             cater_day_obj[diet_pref] += 1;
-        } else if (diet_pref !== CUSTOM_DIET_STRING){
+        } else {
             //define a new dietary type
-
             cater_day_obj[diet_pref] = 1;
+            cater_day_obj["dietsAllergens"][diet_pref] = {};
         }
 
         //does this person have allergens or other dietary requirements?
         if(person_obj[3]) {
-            if(cater_day_obj[person_obj[3]]) {
-                //increase by 1
-                cater_day_obj[person_obj[3]] += 1;
+            const allergen = person_obj[3];
+            //add it to the diets list
+            // if(cater_day_obj[person_obj[3]]) {
+            //     //increase by 1
+            //     cater_day_obj[person_obj[3]] += 1;
+            // } else {
+            //     //define a new dietary type
+            //     cater_day_obj[person_obj[3]] = 1;
+            // }
+
+            //does this allergen already exist for this diet?
+            if(cater_day_obj["dietsAllergens"][diet_pref][allergen]){
+                cater_day_obj["dietsAllergens"][diet_pref][allergen] += 1;
             } else {
-                //define a new dietary type
-                cater_day_obj[person_obj[3]] = 1;
+                cater_day_obj["dietsAllergens"][diet_pref][allergen] = 1;
             }
         }
 
