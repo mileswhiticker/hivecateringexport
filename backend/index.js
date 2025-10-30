@@ -560,6 +560,7 @@ app.get("/api/download", (req, res) => {
                     // console.log(`${typeof cell}`,cell);
                     if(typeof cell === "string" && cell.substring(0,3) === "<b>"){
                         cell = cell.slice(3);
+                        cell = cell.charAt(0).toUpperCase() + cell.slice(1);
                         doc.fontSize(10).font('Helvetica-Bold').text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
                     } else {
                         doc.fontSize(10).font('Helvetica').text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
