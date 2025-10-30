@@ -557,7 +557,7 @@ app.get("/api/download", (req, res) => {
                     }
                 } else {
                     //regular text
-                    console.log(`${typeof cell}`,cell);
+                    // console.log(`${typeof cell}`,cell);
                     if(typeof cell === "string" && cell.substring(0,3) === "<b>"){
                         cell = cell.slice(3);
                         doc.fontSize(10).font('Helvetica-Bold').text(cell, x + 5, y + 8, { width: colWidths[colIndex] - 10 });
