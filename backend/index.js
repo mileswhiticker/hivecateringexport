@@ -589,7 +589,7 @@ app.get("/api/download", (req, res) => {
         const dateObj = new Date(cur_day_obj.dateObj);
         const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' });
         // doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr + ", total volunteers: " + cur_day_obj.total, { align: "right" });
-        doc.fontSize(30).text(dayName + " " + cur_day_obj.dateStr, { align: "right" });
+        doc.fontSize(28).text(dayName + " " + cur_day_obj.dateStr, { align: "right" });
         // doc.moveDown();
 
         let tableData = [];
@@ -625,7 +625,7 @@ app.get("/api/download", (req, res) => {
         }
 
         //finally, draw the table
-        drawTable(doc, tableData, doc.page.margins.left, 100, [310, 30, 125], 25, last_generated_json["biggest_diet"]);
+        drawTable(doc, tableData, doc.page.margins.left, 100, [310, 30, 125], 20, last_generated_json["biggest_diet"]);
         const title_font_size = 30;
         // const logo_height = 133;
         const logo_width = 373;
